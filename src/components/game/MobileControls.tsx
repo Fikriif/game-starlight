@@ -1,76 +1,138 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import { Vector2D } from "@/game/types/game";
 
 interface MobileControlsProps {
   onVectorChange: (vector: Vector2D | null) => void;
+  onAimVectorChange: (vector: Vector2D | null) => void;
 }
 
-export default function MobileControls({ onVectorChange }: MobileControlsProps) {
-  const containerRef = useRef<HTMLDivElement | null>(null);
-  const [touchActive, setTouchActive] = useState(false);
-  const [origin, setOrigin] = useState<{ x: number; y: number } | null>(null);
-  const [knobPos, setKnobPos] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
+interface StickState {
+  pointerId: number | null;
+  active: boolean;
+  origin: { x: number; y: number } | null;
+  knobPos: { x: number; y: number };
+}
 
-  const activePointerId = useRef<number | null>(null);
+export default function MobileControls({
+  onVectorChange,
+  onAimVectorChange,
+}: MobileControlsProps) {
+  const containerRef = useRef<HTMLDivElement | null>(null);
+
+  // Left Stick (Movement)
+  const [leftStick, setLeftStick] = useState<StickState>({
+    pointerId: null,
+    active: false,
+    origin: null,
+    knobPos: { x: 0, y: 0 },
+  });
+
+  // Right Stick (Aim & Fire)
+  const [rightStick, setRightStick] = useState<StickState>({
+    pointerId: null,
+    active: false,
+    origin: null,
+    knobPos: { x: 0, y: 0 },
+  });
+
   const maxRadius = 45; // Max joystick thumb travel
 
   const handlePointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
-    if (activePointerId.current !== null) return;
-    activePointerId.current = e.pointerId;
-
     const rect = e.currentTarget.getBoundingClientRect();
     const touchX = e.clientX - rect.left;
     const touchY = e.clientY - rect.top;
+    const isLeftHalf = touchX < rect.width / 2;
 
-    setOrigin({ x: touchX, y: touchY });
-    setKnobPos({ x: 0, y: 0 });
-    setTouchActive(true);
-    e.currentTarget.setPointerCapture(e.pointerId);
+    if (isLeftHalf && leftStick.pointerId === null) {
+      setLeftStick({
+        pointerId: e.pointerId,
+        active: true,
+        origin: { x: touchX, y: touchY },
+        knobPos: { x: 0, y: 0 },
+      });
+      e.currentTarget.setPointerCapture(e.pointerId);
+    } else if (!isLeftHalf && rightStick.pointerId === null) {
+      setRightStick({
+        pointerId: e.pointerId,
+        active: true,
+        origin: { x: touchX, y: touchY },
+        knobPos: { x: 0, y: 0 },
+      });
+      e.currentTarget.setPointerCapture(e.pointerId);
+    }
   };
 
   const handlePointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
-    if (activePointerId.current !== e.pointerId || !origin) return;
-
     const rect = e.currentTarget.getBoundingClientRect();
     const currentX = e.clientX - rect.left;
     const currentY = e.clientY - rect.top;
 
-    const dx = currentX - origin.x;
-    const dy = currentY - origin.y;
-    const dist = Math.hypot(dx, dy);
+    // 1. Left Stick Move
+    if (leftStick.pointerId === e.pointerId && leftStick.origin) {
+      const dx = currentX - leftStick.origin.x;
+      const dy = currentY - leftStick.origin.y;
+      const dist = Math.hypot(dx, dy);
 
-    if (dist === 0) {
-      setKnobPos({ x: 0, y: 0 });
-      onVectorChange(null);
-      return;
+      if (dist === 0) {
+        setLeftStick((prev) => ({ ...prev, knobPos: { x: 0, y: 0 } }));
+        onVectorChange(null);
+      } else {
+        const clampedDist = Math.min(dist, maxRadius);
+        const normX = dx / dist;
+        const normY = dy / dist;
+        setLeftStick((prev) => ({
+          ...prev,
+          knobPos: { x: normX * clampedDist, y: normY * clampedDist },
+        }));
+        const strength = clampedDist / maxRadius;
+        onVectorChange({ x: normX * strength, y: normY * strength });
+      }
     }
 
-    const clampedDist = Math.min(dist, maxRadius);
-    const normX = dx / dist;
-    const normY = dy / dist;
+    // 2. Right Stick Move (Aim & Fire)
+    if (rightStick.pointerId === e.pointerId && rightStick.origin) {
+      const dx = currentX - rightStick.origin.x;
+      const dy = currentY - rightStick.origin.y;
+      const dist = Math.hypot(dx, dy);
 
-    setKnobPos({
-      x: normX * clampedDist,
-      y: normY * clampedDist,
-    });
-
-    // Provide normalized vector (-1 to 1) based on distance ratio
-    const strength = clampedDist / maxRadius;
-    onVectorChange({
-      x: normX * strength,
-      y: normY * strength,
-    });
+      if (dist === 0) {
+        setRightStick((prev) => ({ ...prev, knobPos: { x: 0, y: 0 } }));
+        onAimVectorChange(null);
+      } else {
+        const clampedDist = Math.min(dist, maxRadius);
+        const normX = dx / dist;
+        const normY = dy / dist;
+        setRightStick((prev) => ({
+          ...prev,
+          knobPos: { x: normX * clampedDist, y: normY * clampedDist },
+        }));
+        const strength = clampedDist / maxRadius;
+        onAimVectorChange({ x: normX * strength, y: normY * strength });
+      }
+    }
   };
 
   const handlePointerUp = (e: React.PointerEvent<HTMLDivElement>) => {
-    if (activePointerId.current === e.pointerId) {
-      activePointerId.current = null;
-      setTouchActive(false);
-      setOrigin(null);
-      setKnobPos({ x: 0, y: 0 });
+    if (leftStick.pointerId === e.pointerId) {
+      setLeftStick({
+        pointerId: null,
+        active: false,
+        origin: null,
+        knobPos: { x: 0, y: 0 },
+      });
       onVectorChange(null);
+    }
+
+    if (rightStick.pointerId === e.pointerId) {
+      setRightStick({
+        pointerId: null,
+        active: false,
+        origin: null,
+        knobPos: { x: 0, y: 0 },
+      });
+      onAimVectorChange(null);
     }
   };
 
@@ -81,33 +143,53 @@ export default function MobileControls({ onVectorChange }: MobileControlsProps) 
       onPointerMove={handlePointerMove}
       onPointerUp={handlePointerUp}
       onPointerCancel={handlePointerUp}
-      className="md:hidden absolute inset-x-0 bottom-0 h-48 z-20 touch-none select-none flex items-center justify-center"
+      className="md:hidden absolute inset-x-0 bottom-0 h-52 z-20 touch-none select-none flex items-center justify-between px-6"
       style={{ touchAction: "none" }}
     >
-      {/* Floating Joystick Visual */}
-      {touchActive && origin ? (
+      {/* Left Stick (Move) Visual */}
+      {leftStick.active && leftStick.origin ? (
         <div
           className="absolute pointer-events-none -translate-x-1/2 -translate-y-1/2"
-          style={{ left: origin.x, top: origin.y }}
+          style={{ left: leftStick.origin.x, top: leftStick.origin.y }}
         >
-          {/* Base Ring */}
-          <div className="w-24 h-24 rounded-full border-2 border-cyan-400/40 bg-cyan-950/30 backdrop-blur-sm shadow-[0_0_20px_rgba(0,240,255,0.3)] flex items-center justify-center relative">
-            {/* Center Axis Dot */}
+          <div className="w-24 h-24 rounded-full border-2 border-cyan-400/40 bg-cyan-950/40 backdrop-blur-sm shadow-[0_0_20px_rgba(0,240,255,0.3)] flex items-center justify-center relative">
             <div className="w-2 h-2 rounded-full bg-cyan-400/60" />
-
-            {/* Draggable Knob */}
             <div
-              className="absolute w-12 h-12 rounded-full bg-gradient-to-br from-cyan-400 to-blue-600 shadow-[0_0_15px_rgba(0,240,255,0.8)] border border-white/60 -translate-x-1/2 -translate-y-1/2 top-1/2 left-1/2 transition-transform duration-75"
+              className="absolute w-12 h-12 rounded-full bg-gradient-to-br from-cyan-400 to-blue-600 shadow-[0_0_15px_rgba(0,240,255,0.8)] border border-white/60 -translate-x-1/2 -translate-y-1/2 top-1/2 left-1/2"
               style={{
-                transform: `translate(calc(-50% + ${knobPos.x}px), calc(-50% + ${knobPos.y}px))`,
+                transform: `translate(calc(-50% + ${leftStick.knobPos.x}px), calc(-50% + ${leftStick.knobPos.y}px))`,
               }}
             />
           </div>
         </div>
       ) : (
-        <div className="pointer-events-none flex flex-col items-center justify-center opacity-60">
+        <div className="pointer-events-none flex flex-col items-center justify-center opacity-50">
           <div className="w-20 h-20 rounded-full border border-dashed border-cyan-500/40 flex items-center justify-center">
-            <span className="text-[11px] font-mono text-cyan-300">TOUCH TO MOVE</span>
+            <span className="text-[10px] font-mono text-cyan-300 font-bold">MOVE</span>
+          </div>
+        </div>
+      )}
+
+      {/* Right Stick (Aim & Fire) Visual */}
+      {rightStick.active && rightStick.origin ? (
+        <div
+          className="absolute pointer-events-none -translate-x-1/2 -translate-y-1/2"
+          style={{ left: rightStick.origin.x, top: rightStick.origin.y }}
+        >
+          <div className="w-24 h-24 rounded-full border-2 border-rose-500/40 bg-rose-950/40 backdrop-blur-sm shadow-[0_0_20px_rgba(244,63,94,0.3)] flex items-center justify-center relative">
+            <div className="w-2 h-2 rounded-full bg-rose-400/60" />
+            <div
+              className="absolute w-12 h-12 rounded-full bg-gradient-to-br from-rose-500 to-purple-600 shadow-[0_0_15px_rgba(244,63,94,0.8)] border border-white/60 -translate-x-1/2 -translate-y-1/2 top-1/2 left-1/2"
+              style={{
+                transform: `translate(calc(-50% + ${rightStick.knobPos.x}px), calc(-50% + ${rightStick.knobPos.y}px))`,
+              }}
+            />
+          </div>
+        </div>
+      ) : (
+        <div className="pointer-events-none flex flex-col items-center justify-center opacity-50">
+          <div className="w-20 h-20 rounded-full border border-dashed border-rose-500/40 flex items-center justify-center">
+            <span className="text-[10px] font-mono text-rose-300 font-bold">AIM & FIRE</span>
           </div>
         </div>
       )}

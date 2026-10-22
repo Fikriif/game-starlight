@@ -31,12 +31,13 @@ export interface PlayerState {
   vx: number;
   vy: number;
   radius: number;
-  angle: number;
+  angle: number; // Current visual and firing rotation angle in radians
   lives: number;
   maxLives: number;
   invulnerableTime: number; // in seconds
   shieldActive: boolean;
   shieldTime: number;
+  muzzleFlashTimer: number; // Muzzle flash animation timer
 }
 
 export interface ProjectileEntity {
@@ -45,6 +46,7 @@ export interface ProjectileEntity {
   y: number;
   vx: number;
   vy: number;
+  speed: number;
   radius: number;
   damage: number;
   color: string;
@@ -70,6 +72,7 @@ export interface MeteorEntity {
   coreColor: string;
   glowColor: string;
   wobblePhase?: number;
+  hitFlashTimer?: number; // Timer for damage hit flash
 }
 
 export interface PowerUpEntity {
@@ -137,7 +140,10 @@ export interface InputState {
   down: boolean;
   left: boolean;
   right: boolean;
-  touchVector: Vector2D | null;
+  touchVector: Vector2D | null; // Movement stick
+  touchAimVector: Vector2D | null; // Aim & fire stick for mobile
+  mousePos: Vector2D | null; // Cursor coordinates in canvas world space
+  isFiring: boolean; // Mouse button held down or space pressed or touch aim active
   spacePressed: boolean;
 }
 

@@ -3,11 +3,11 @@ import {
   Vector2D,
   ProjectileEntity,
   InputState,
-  MeteorEntity,
+  ParticleEntity,
 } from "../types/game";
 import { PLAYER_CONFIG } from "../config/constants";
 import { createProjectile } from "./Projectile";
-import { createThrusterParticle } from "./Particle";
+import { createMuzzleFlashParticles, createThrusterParticle } from "./Particle";
 
 export class Player {
   public state: PlayerState;
@@ -21,12 +21,13 @@ export class Player {
       vx: 0,
       vy: 0,
       radius: PLAYER_CONFIG.RADIUS,
-      angle: -Math.PI / 2, // Facing upwards
+      angle: -Math.PI / 2, // Default facing upwards (-Y)
       lives: PLAYER_CONFIG.MAX_LIVES,
       maxLives: PLAYER_CONFIG.MAX_LIVES,
       invulnerableTime: 0,
       shieldActive: false,
       shieldTime: 0,
+      muzzleFlashTimer: 0,
     };
   }
 
@@ -40,6 +41,7 @@ export class Player {
     this.state.invulnerableTime = 0;
     this.state.shieldActive = false;
     this.state.shieldTime = 0;
+    this.state.muzzleFlashTimer = 0;
     this.fireTimer = 0;
   }
 
@@ -48,13 +50,12 @@ export class Player {
     input: InputState,
     arenaWidth: number,
     arenaHeight: number,
-    meteors: MeteorEntity[],
     hasRapidFire: boolean,
     hasSpreadShot: boolean,
     onSpawnProjectile: (p: ProjectileEntity) => void,
-    onSpawnThrusterParticle: (p: ReturnType<typeof createThrusterParticle>) => void
+    onSpawnParticle: (p: ParticleEntity) => void
   ) {
-    // 1. Movement input handling
+    // 1. Independent Movement Physics
     let moveX = 0;
     let moveY = 0;
 
@@ -63,7 +64,7 @@ export class Player {
     if (input.up) moveY -= 1;
     if (input.down) moveY += 1;
 
-    // Mobile touch vector takes precedence if active
+    // Mobile touch vector takes precedence for movement if active
     if (input.touchVector) {
       moveX = input.touchVector.x;
       moveY = input.touchVector.y;
@@ -76,51 +77,42 @@ export class Player {
       const targetVx = normX * PLAYER_CONFIG.SPEED;
       const targetVy = normY * PLAYER_CONFIG.SPEED;
 
-      // Smooth acceleration
+      // Responsive acceleration
       this.state.vx += (targetVx - this.state.vx) * 14 * dt;
       this.state.vy += (targetVy - this.state.vy) * 14 * dt;
 
-      // Turn ship slightly into movement vector
-      const targetAngle = Math.atan2(this.state.vy, this.state.vx);
-      // Smooth angle interpolation
-      let angleDiff = targetAngle - this.state.angle;
-      while (angleDiff > Math.PI) angleDiff -= Math.PI * 2;
-      while (angleDiff < -Math.PI) angleDiff += Math.PI * 2;
-      this.state.angle += angleDiff * 8 * dt;
-
-      // Emit engine thruster particles
+      // Emit twin-engine thruster particles from rear
       this.thrusterTimer += dt;
-      if (this.thrusterTimer > 0.04) {
+      if (this.thrusterTimer > 0.035) {
         this.thrusterTimer = 0;
-        // Twin engines offset from center
-        const backDist = this.state.radius * 0.9;
-        const spreadDist = 7;
+        const backDist = this.state.radius * 0.95;
+        const spreadDist = 7.5;
         const cosA = Math.cos(this.state.angle);
         const sinA = Math.sin(this.state.angle);
 
-        // Left engine
+        // Left rear engine
         const e1x = this.state.x - cosA * backDist - sinA * spreadDist;
         const e1y = this.state.y - sinA * backDist + cosA * spreadDist;
-        onSpawnThrusterParticle(createThrusterParticle(e1x, e1y, this.state.angle));
+        onSpawnParticle(createThrusterParticle(e1x, e1y, this.state.angle));
 
-        // Right engine
+        // Right rear engine
         const e2x = this.state.x - cosA * backDist + sinA * spreadDist;
         const e2y = this.state.y - sinA * backDist - cosA * spreadDist;
-        onSpawnThrusterParticle(createThrusterParticle(e2x, e2y, this.state.angle));
+        onSpawnParticle(createThrusterParticle(e2x, e2y, this.state.angle));
       }
     } else {
-      // Damping / friction
-      this.state.vx *= Math.pow(0.05, dt);
-      this.state.vy *= Math.pow(0.05, dt);
+      // Inertia damping / friction
+      this.state.vx *= Math.pow(0.04, dt);
+      this.state.vy *= Math.pow(0.04, dt);
       if (Math.abs(this.state.vx) < 1) this.state.vx = 0;
       if (Math.abs(this.state.vy) < 1) this.state.vy = 0;
     }
 
-    // Apply movement
+    // Apply movement displacement
     this.state.x += this.state.vx * dt;
     this.state.y += this.state.vy * dt;
 
-    // Clamp inside arena boundaries with padding
+    // Clamp inside arena boundaries with safety padding
     const pad = this.state.radius + 6;
     if (this.state.x < pad) {
       this.state.x = pad;
@@ -138,7 +130,36 @@ export class Player {
       this.state.vy = 0;
     }
 
-    // 2. Timers (Invulnerability & Shield)
+    // 2. Independent Aiming System
+    let targetAngle: number | null = null;
+
+    if (input.mousePos) {
+      // Mouse cursor aiming (highest desktop priority)
+      const dx = input.mousePos.x - this.state.x;
+      const dy = input.mousePos.y - this.state.y;
+      if (Math.hypot(dx, dy) > 8) {
+        targetAngle = Math.atan2(dy, dx);
+      }
+    } else if (input.touchAimVector) {
+      // Mobile dedicated right joystick aiming
+      const aimMag = Math.hypot(input.touchAimVector.x, input.touchAimVector.y);
+      if (aimMag > 0.1) {
+        targetAngle = Math.atan2(input.touchAimVector.y, input.touchAimVector.x);
+      }
+    } else if (inputMag > 0.1) {
+      // Keyboard-only fallback: aim toward movement heading if no mouse/aim stick active
+      targetAngle = Math.atan2(this.state.vy, this.state.vx);
+    }
+
+    // Smoothly rotate ship toward target angle
+    if (targetAngle !== null) {
+      let diff = targetAngle - this.state.angle;
+      while (diff > Math.PI) diff -= Math.PI * 2;
+      while (diff < -Math.PI) diff += Math.PI * 2;
+      this.state.angle += diff * Math.min(22 * dt, 1.0);
+    }
+
+    // 3. Timers (Invulnerability, Shield, Muzzle Flash)
     if (this.state.invulnerableTime > 0) {
       this.state.invulnerableTime = Math.max(0, this.state.invulnerableTime - dt);
     }
@@ -150,58 +171,49 @@ export class Player {
       }
     }
 
-    // 3. Automatic Shooting
+    if (this.state.muzzleFlashTimer > 0) {
+      this.state.muzzleFlashTimer = Math.max(0, this.state.muzzleFlashTimer - dt);
+    }
+
+    // 4. Directional Shooting (Fires along ship's exact facing vector)
     const fireInterval = hasRapidFire
       ? PLAYER_CONFIG.FIRE_RATE_RAPID
       : PLAYER_CONFIG.FIRE_RATE_BASE;
 
     this.fireTimer += dt;
-    if (this.fireTimer >= fireInterval) {
+
+    if (input.isFiring && this.fireTimer >= fireInterval) {
       this.fireTimer = 0;
-      this.handleAutoFire(meteors, hasSpreadShot, onSpawnProjectile);
+      this.state.muzzleFlashTimer = 0.08;
+      this.fireDirectionalProjectiles(hasSpreadShot, onSpawnProjectile, onSpawnParticle);
     }
   }
 
-  private handleAutoFire(
-    meteors: MeteorEntity[],
+  private fireDirectionalProjectiles(
     hasSpreadShot: boolean,
-    onSpawnProjectile: (p: ProjectileEntity) => void
+    onSpawnProjectile: (p: ProjectileEntity) => void,
+    onSpawnParticle: (p: ParticleEntity) => void
   ) {
-    // Locate nearest target within range
-    let bestTarget: MeteorEntity | null = null;
-    let bestDistSq = PLAYER_CONFIG.AUTO_TARGET_RANGE * PLAYER_CONFIG.AUTO_TARGET_RANGE;
+    const angle = this.state.angle;
+    const muzzleDist = this.state.radius * 1.35;
+    const muzzleX = this.state.x + Math.cos(angle) * muzzleDist;
+    const muzzleY = this.state.y + Math.sin(angle) * muzzleDist;
 
-    for (const m of meteors) {
-      const dx = m.x - this.state.x;
-      const dy = m.y - this.state.y;
-      const distSq = dx * dx + dy * dy;
-      if (distSq < bestDistSq) {
-        bestDistSq = distSq;
-        bestTarget = m;
-      }
+    // Trigger visual muzzle flash sparks
+    const flashes = createMuzzleFlashParticles(muzzleX, muzzleY, angle, "#00f0ff");
+    for (const f of flashes) {
+      onSpawnParticle(f);
     }
-
-    // Fire angle (targeting nearest enemy or default forward / up)
-    let fireAngle: number;
-    if (bestTarget) {
-      fireAngle = Math.atan2(bestTarget.y - this.state.y, bestTarget.x - this.state.x);
-    } else {
-      // Default to facing angle or straight up
-      fireAngle = this.state.angle;
-    }
-
-    const noseDist = this.state.radius * 1.1;
-    const noseX = this.state.x + Math.cos(fireAngle) * noseDist;
-    const noseY = this.state.y + Math.sin(fireAngle) * noseDist;
 
     if (hasSpreadShot) {
-      // 3 projectiles: center, -16 deg, +16 deg
-      const spread = 0.28; // ~16 degrees
-      onSpawnProjectile(createProjectile(noseX, noseY, fireAngle, 1, "#00f0ff", "rgba(0, 240, 255, 0.8)"));
-      onSpawnProjectile(createProjectile(noseX, noseY, fireAngle - spread, 1, "#00f0ff", "rgba(0, 240, 255, 0.8)"));
-      onSpawnProjectile(createProjectile(noseX, noseY, fireAngle + spread, 1, "#00f0ff", "rgba(0, 240, 255, 0.8)"));
+      // Tri-beam fan spread centered along aim angle
+      const spread = 0.22; // ~12.5 degrees
+      onSpawnProjectile(createProjectile(muzzleX, muzzleY, angle, 1, "#00f0ff", "rgba(0, 240, 255, 0.9)"));
+      onSpawnProjectile(createProjectile(muzzleX, muzzleY, angle - spread, 1, "#00f0ff", "rgba(0, 240, 255, 0.9)"));
+      onSpawnProjectile(createProjectile(muzzleX, muzzleY, angle + spread, 1, "#00f0ff", "rgba(0, 240, 255, 0.9)"));
     } else {
-      onSpawnProjectile(createProjectile(noseX, noseY, fireAngle, 1, "#00f0ff", "rgba(0, 240, 255, 0.8)"));
+      // Single precision blaster along exact aim angle
+      onSpawnProjectile(createProjectile(muzzleX, muzzleY, angle, 1, "#00f0ff", "rgba(0, 240, 255, 0.9)"));
     }
   }
 
@@ -212,7 +224,7 @@ export class Player {
     if (this.state.shieldActive) {
       this.state.shieldActive = false;
       this.state.shieldTime = 0;
-      this.state.invulnerableTime = 1.0; // short grace period
+      this.state.invulnerableTime = 1.0;
       return "shield" as unknown as boolean;
     }
 
@@ -239,38 +251,55 @@ export class Player {
     ctx.save();
     ctx.translate(this.state.x, this.state.y);
 
-    // Invulnerability flashing
+    // Invulnerability flashing feedback
     if (this.state.invulnerableTime > 0) {
       const flash = Math.sin(this.state.invulnerableTime * 24);
       ctx.globalAlpha = flash > 0 ? 0.9 : 0.35;
     }
 
+    // Rotate context to ship angle
     ctx.rotate(this.state.angle);
 
-    // Ship Hull Design (Futuristic Fighter)
-    // Wings
+    // Muzzle Flash Flare on nose
+    if (this.state.muzzleFlashTimer > 0) {
+      ctx.save();
+      ctx.shadowColor = "#00f0ff";
+      ctx.shadowBlur = 18;
+      ctx.fillStyle = "#ffffff";
+      ctx.beginPath();
+      ctx.arc(this.state.radius * 1.35, 0, 6, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.fillStyle = "rgba(0, 240, 255, 0.6)";
+      ctx.beginPath();
+      ctx.arc(this.state.radius * 1.35, 0, 11, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+    }
+
+    // Ship Hull Design (Nose pointing forward along +X)
     ctx.shadowColor = "#00f0ff";
     ctx.shadowBlur = 12;
 
     ctx.beginPath();
-    ctx.moveTo(this.state.radius * 1.25, 0); // Nose
-    ctx.lineTo(-this.state.radius * 0.9, -this.state.radius * 0.95); // Left wingtip
-    ctx.lineTo(-this.state.radius * 0.45, -this.state.radius * 0.35); // Left inner
-    ctx.lineTo(-this.state.radius * 0.85, 0); // Center tail
-    ctx.lineTo(-this.state.radius * 0.45, this.state.radius * 0.35); // Right inner
-    ctx.lineTo(-this.state.radius * 0.9, this.state.radius * 0.95); // Right wingtip
+    ctx.moveTo(this.state.radius * 1.35, 0); // Sharp Forward Nose / Muzzle
+    ctx.lineTo(-this.state.radius * 0.9, -this.state.radius * 0.95); // Left Wingtip
+    ctx.lineTo(-this.state.radius * 0.45, -this.state.radius * 0.35); // Left Inner
+    ctx.lineTo(-this.state.radius * 0.85, 0); // Tail
+    ctx.lineTo(-this.state.radius * 0.45, this.state.radius * 0.35); // Right Inner
+    ctx.lineTo(-this.state.radius * 0.9, this.state.radius * 0.95); // Right Wingtip
     ctx.closePath();
 
-    // Metallic gradient
+    // High-tech aerospace gradient
     const hullGrad = ctx.createLinearGradient(
-      this.state.radius,
+      this.state.radius * 1.35,
       0,
       -this.state.radius,
       0
     );
     hullGrad.addColorStop(0, "#ffffff");
-    hullGrad.addColorStop(0.35, "#38bdf8");
-    hullGrad.addColorStop(0.85, "#0c1737");
+    hullGrad.addColorStop(0.3, "#38bdf8");
+    hullGrad.addColorStop(0.75, "#0e1a3d");
     hullGrad.addColorStop(1, "#030712");
 
     ctx.fillStyle = hullGrad;
@@ -280,13 +309,21 @@ export class Player {
     ctx.lineWidth = 1.8;
     ctx.stroke();
 
+    // Center Fuselage Spine Line
+    ctx.strokeStyle = "rgba(255, 255, 255, 0.4)";
+    ctx.lineWidth = 1.2;
+    ctx.beginPath();
+    ctx.moveTo(this.state.radius * 1.2, 0);
+    ctx.lineTo(-this.state.radius * 0.4, 0);
+    ctx.stroke();
+
     // Cockpit Canopy (Glowing Cyan Gem)
     ctx.beginPath();
     ctx.ellipse(
-      this.state.radius * 0.25,
+      this.state.radius * 0.3,
       0,
       this.state.radius * 0.4,
-      this.state.radius * 0.2,
+      this.state.radius * 0.18,
       0,
       0,
       Math.PI * 2
@@ -299,12 +336,21 @@ export class Player {
     // Wingtip Plasma Cannons
     ctx.fillStyle = "#ff007f";
     ctx.shadowColor = "#ff007f";
+    ctx.shadowBlur = 8;
     ctx.fillRect(-this.state.radius * 0.85, -this.state.radius * 0.95, 4, 3);
     ctx.fillRect(-this.state.radius * 0.85, this.state.radius * 0.95 - 3, 4, 3);
 
+    // Visible Nose Cannon Muzzle Tip
+    ctx.fillStyle = "#00f0ff";
+    ctx.shadowColor = "#00f0ff";
+    ctx.shadowBlur = 6;
+    ctx.beginPath();
+    ctx.arc(this.state.radius * 1.35, 0, 2, 0, Math.PI * 2);
+    ctx.fill();
+
     ctx.restore();
 
-    // Energy Shield Barrier (Rendered without ship rotation)
+    // Energy Shield Barrier (Rendered around ship)
     if (this.state.shieldActive) {
       ctx.save();
       ctx.translate(this.state.x, this.state.y);
@@ -316,7 +362,7 @@ export class Player {
       ctx.strokeStyle = "rgba(56, 189, 248, 0.85)";
       ctx.lineWidth = 2.5;
 
-      // Hexagonal outer forcefield
+      // Hexagonal forcefield
       ctx.beginPath();
       const sides = 6;
       const rot = Date.now() * 0.0015;
@@ -330,7 +376,7 @@ export class Player {
       ctx.closePath();
       ctx.stroke();
 
-      // Pulsing inner bubble
+      // Pulsing inner shield aura
       ctx.fillStyle = "rgba(56, 189, 248, 0.12)";
       ctx.beginPath();
       ctx.arc(0, 0, shieldRadius * 0.95, 0, Math.PI * 2);

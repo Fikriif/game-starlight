@@ -26,6 +26,7 @@ export default function GameCanvas() {
   const [wave, setWave] = useState(1);
   const [survivalSeconds, setSurvivalSeconds] = useState(0);
   const [activePowerUps, setActivePowerUps] = useState<ActivePowerUpState[]>([]);
+  const [autoFire, setAutoFire] = useState(false);
   const [gameOverStats, setGameOverStats] = useState<GameStats | null>(null);
 
   // Run Session Token & ID
@@ -152,9 +153,23 @@ export default function GameCanvas() {
     }
   };
 
+  const handleToggleAutoFire = () => {
+    const nextVal = !autoFire;
+    setAutoFire(nextVal);
+    if (engineRef.current) {
+      engineRef.current.setAutoFire(nextVal);
+    }
+  };
+
   const handleMobileTouchVector = (vector: Vector2D | null) => {
     if (engineRef.current) {
       engineRef.current.setTouchVector(vector);
+    }
+  };
+
+  const handleMobileTouchAimVector = (vector: Vector2D | null) => {
+    if (engineRef.current) {
+      engineRef.current.setTouchAimVector(vector);
     }
   };
 
@@ -179,13 +194,18 @@ export default function GameCanvas() {
         survivalSeconds={survivalSeconds}
         activePowerUps={activePowerUps}
         isPaused={status === "paused"}
+        autoFire={autoFire}
+        onToggleAutoFire={handleToggleAutoFire}
         onPauseToggle={handlePauseToggle}
         onRestart={startNewRun}
       />
 
-      {/* Virtual Mobile Joystick for touchscreen devices */}
+      {/* Virtual Mobile Twin-Stick for touchscreen devices */}
       {status === "playing" && (
-        <MobileControls onVectorChange={handleMobileTouchVector} />
+        <MobileControls
+          onVectorChange={handleMobileTouchVector}
+          onAimVectorChange={handleMobileTouchAimVector}
+        />
       )}
 
       {/* Pause Screen Overlay */}

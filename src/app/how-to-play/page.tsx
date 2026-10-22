@@ -54,7 +54,7 @@ export default function HowToPlayPage() {
         <section className="space-y-4">
           <h2 className="text-xl sm:text-2xl font-bold text-white flex items-center gap-2.5">
             <Keyboard className="w-6 h-6 text-cyan-400" />
-            1. Navigation & Flight Controls
+            1. Navigation & Directional Aiming Controls
           </h2>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -62,7 +62,7 @@ export default function HowToPlayPage() {
             <div className="glass-panel p-5 rounded-2xl border border-cyan-500/20 space-y-3">
               <div className="flex items-center gap-2 text-cyan-300 font-bold text-sm">
                 <Keyboard className="w-4 h-4" />
-                <span>Desktop (Keyboard)</span>
+                <span>Desktop (Mouse & Keyboard)</span>
               </div>
               <ul className="space-y-2 text-xs sm:text-sm text-slate-300 font-mono">
                 <li className="flex items-center justify-between p-2 rounded-lg bg-slate-900/60 border border-slate-800">
@@ -70,8 +70,12 @@ export default function HowToPlayPage() {
                   <strong className="text-cyan-300">[W / A / S / D] or [Arrows]</strong>
                 </li>
                 <li className="flex items-center justify-between p-2 rounded-lg bg-slate-900/60 border border-slate-800">
-                  <span>Auto-Aim Blasters:</span>
-                  <strong className="text-emerald-400">Automatic Firing</strong>
+                  <span>Aim Spaceship:</span>
+                  <strong className="text-cyan-400">[Mouse Cursor]</strong>
+                </li>
+                <li className="flex items-center justify-between p-2 rounded-lg bg-slate-900/60 border border-slate-800">
+                  <span>Fire Directional Blaster:</span>
+                  <strong className="text-emerald-400">[Left Click] or [Space]</strong>
                 </li>
                 <li className="flex items-center justify-between p-2 rounded-lg bg-slate-900/60 border border-slate-800">
                   <span>Pause Flight:</span>
@@ -84,16 +88,20 @@ export default function HowToPlayPage() {
             <div className="glass-panel p-5 rounded-2xl border border-purple-500/20 space-y-3">
               <div className="flex items-center gap-2 text-purple-300 font-bold text-sm">
                 <Smartphone className="w-4 h-4" />
-                <span>Mobile & Touchscreen</span>
+                <span>Mobile (Twin-Stick Touch)</span>
               </div>
               <ul className="space-y-2 text-xs sm:text-sm text-slate-300 font-mono">
                 <li className="flex items-center justify-between p-2 rounded-lg bg-slate-900/60 border border-slate-800">
-                  <span>Virtual Joystick:</span>
-                  <strong className="text-purple-300">Touch & Drag Anywhere</strong>
+                  <span>Left Virtual Joystick:</span>
+                  <strong className="text-cyan-300">Move & Dodge</strong>
                 </li>
                 <li className="flex items-center justify-between p-2 rounded-lg bg-slate-900/60 border border-slate-800">
-                  <span>Firing:</span>
-                  <strong className="text-emerald-400">Continuous Automatic</strong>
+                  <span>Right Virtual Joystick:</span>
+                  <strong className="text-rose-400">Aim & Fire Blasters</strong>
+                </li>
+                <li className="flex items-center justify-between p-2 rounded-lg bg-slate-900/60 border border-slate-800">
+                  <span>Auto-Fire Option:</span>
+                  <strong className="text-emerald-400">HUD Toggle Available</strong>
                 </li>
                 <li className="flex items-center justify-between p-2 rounded-lg bg-slate-900/60 border border-slate-800">
                   <span>Pause / Settings:</span>
@@ -108,7 +116,7 @@ export default function HowToPlayPage() {
         <section className="space-y-4">
           <h2 className="text-xl sm:text-2xl font-bold text-white flex items-center gap-2.5">
             <Target className="w-6 h-6 text-purple-400" />
-            2. Combat Systems & 3-Life Armor
+            2. Skill-Based Directional Combat & 3-Life Armor
           </h2>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -125,10 +133,10 @@ export default function HowToPlayPage() {
             <div className="glass-card p-5 rounded-2xl space-y-2">
               <div className="flex items-center gap-2 text-cyan-400 font-bold text-base">
                 <Target className="w-5 h-5" />
-                <span>Smart Auto-Targeting</span>
+                <span>Skill Directional Aim</span>
               </div>
               <p className="text-xs text-slate-400 leading-relaxed">
-                The starship continuously calculates projectile trajectories, firing at the highest-threat incoming hazard automatically.
+                Projectiles travel straight along the starship muzzle. Zero auto-homing. Lead your shots against fast-moving meteors while executing evasive maneuvers.
               </p>
             </div>
 

@@ -90,6 +90,9 @@ export function updateMeteor(m: MeteorEntity, dt: number): void {
   m.x += m.vx * dt;
   m.y += m.vy * dt;
   m.rotation += m.rotationSpeed * dt;
+  if (m.hitFlashTimer && m.hitFlashTimer > 0) {
+    m.hitFlashTimer = Math.max(0, m.hitFlashTimer - dt);
+  }
 }
 
 export function renderMeteor(ctx: CanvasRenderingContext2D, m: MeteorEntity) {
@@ -126,6 +129,12 @@ export function renderMeteor(ctx: CanvasRenderingContext2D, m: MeteorEntity) {
 
   ctx.fillStyle = radGrad;
   ctx.fill();
+
+  // White hit flash overlay when damaged
+  if (m.hitFlashTimer && m.hitFlashTimer > 0) {
+    ctx.fillStyle = "rgba(255, 255, 255, 0.75)";
+    ctx.fill();
+  }
 
   ctx.strokeStyle = m.color;
   ctx.lineWidth = m.type === "pulsar" ? 2.5 : 1.5;

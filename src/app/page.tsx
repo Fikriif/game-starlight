@@ -107,9 +107,9 @@ export default function HomePage() {
             <div className="w-12 h-12 rounded-xl bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center mb-4">
               <Target className="w-6 h-6 text-cyan-400" />
             </div>
-            <h2 className="text-xl font-bold text-white mb-2">Smart Auto-Blasters</h2>
+            <h2 className="text-xl font-bold text-white mb-2">Directional Aiming & Blasters</h2>
             <p className="text-sm text-slate-400 leading-relaxed">
-              Targeting computers automatically track and fire upon the closest incoming hazards. Focus your maneuvers on dodging, weaving, and positioning.
+              Full manual flight aiming with mouse cursor or twin-stick touch controls. Zero auto-homing. Lead your shots, execute evasive maneuvers, and blast through cosmic debris.
             </p>
           </div>
 

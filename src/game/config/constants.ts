@@ -11,12 +11,11 @@ export const PLAYER_CONFIG = {
   SPEED: 340, // pixels per second
   MAX_LIVES: 3,
   INVULNERABLE_DURATION: 2.2, // seconds after hit
-  FIRE_RATE_BASE: 0.22, // seconds per shot (approx 4.5 shots/sec)
-  FIRE_RATE_RAPID: 0.11, // seconds per shot (approx 9 shots/sec)
-  PROJECTILE_SPEED: 720,
+  FIRE_RATE_BASE: 0.20, // seconds per shot (5 shots/sec)
+  FIRE_RATE_RAPID: 0.10, // seconds per shot (10 shots/sec)
+  PROJECTILE_SPEED: 820,
   PROJECTILE_RADIUS: 4,
   PROJECTILE_DAMAGE: 1,
-  AUTO_TARGET_RANGE: 650,
 };
 
 export const METEOR_CONFIGS = {

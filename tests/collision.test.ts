@@ -86,6 +86,7 @@ test("checkPlayerMeteorCollisions ignores collision during invulnerability windo
     invulnerableTime: 1.5, // Currently invulnerable!
     shieldActive: false,
     shieldTime: 0,
+    muzzleFlashTimer: 0,
   };
 
   const meteors: MeteorEntity[] = [
@@ -131,6 +132,7 @@ test("checkPlayerPowerUpCollisions detects pickup within radius", () => {
     invulnerableTime: 0,
     shieldActive: false,
     shieldTime: 0,
+    muzzleFlashTimer: 0,
   };
 
   const powerUps: PowerUpEntity[] = [

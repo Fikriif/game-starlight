@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Heart, Pause, Play, RotateCcw, Shield, Zap } from "lucide-react";
+import { Heart, Pause, Play, RotateCcw, Crosshair, Zap } from "lucide-react";
 import SoundToggle from "../ui/SoundToggle";
 import { ActivePowerUpState } from "@/game/types/game";
 
@@ -13,6 +13,8 @@ interface GameHudProps {
   survivalSeconds: number;
   activePowerUps: ActivePowerUpState[];
   isPaused: boolean;
+  autoFire: boolean;
+  onToggleAutoFire: () => void;
   onPauseToggle: () => void;
   onRestart: () => void;
 }
@@ -25,6 +27,8 @@ export default function GameHud({
   survivalSeconds,
   activePowerUps,
   isPaused,
+  autoFire,
+  onToggleAutoFire,
   onPauseToggle,
   onRestart,
 }: GameHudProps) {
@@ -66,18 +70,42 @@ export default function GameHud({
           </div>
         </div>
 
-        {/* Center: Survival Timer */}
-        <div className="glass-panel px-4 py-2 rounded-xl border border-blue-500/30 flex flex-col items-center">
-          <span className="text-[10px] tracking-widest text-blue-300 font-mono uppercase">
-            SURVIVAL
-          </span>
-          <span className="text-lg sm:text-xl font-black font-mono text-white tracking-widest">
-            {formattedTime}
-          </span>
+        {/* Center: Survival Timer & Aiming Directive */}
+        <div className="flex flex-col items-center gap-1">
+          <div className="glass-panel px-4 py-2 rounded-xl border border-blue-500/30 flex flex-col items-center">
+            <span className="text-[10px] tracking-widest text-blue-300 font-mono uppercase">
+              SURVIVAL
+            </span>
+            <span className="text-lg sm:text-xl font-black font-mono text-white tracking-widest">
+              {formattedTime}
+            </span>
+          </div>
+
+          <div className="hidden md:flex items-center gap-2 font-mono text-[10px] text-cyan-400/80 bg-slate-950/60 px-2 py-0.5 rounded border border-cyan-500/20">
+            <span>[MOUSE] AIM</span>
+            <span>•</span>
+            <span>[L-CLICK / SPACE] FIRE</span>
+          </div>
         </div>
 
         {/* Right: Remaining Lives & Controls */}
         <div className="flex items-center gap-2 sm:gap-3 pointer-events-auto">
+          {/* Auto-Fire Toggle Button */}
+          <button
+            onClick={onToggleAutoFire}
+            className={`px-2.5 py-2 rounded-xl border text-xs font-mono font-bold transition-all flex items-center gap-1.5 cursor-pointer shadow-sm ${
+              autoFire
+                ? "bg-cyan-500/20 text-cyan-300 border-cyan-400 shadow-[0_0_12px_rgba(0,240,255,0.3)]"
+                : "bg-slate-900/80 text-slate-400 border-slate-700 hover:text-slate-200"
+            }`}
+            title="Toggle Continuous Auto-Fire"
+            aria-label="Toggle Continuous Auto-Fire"
+          >
+            <Crosshair className={`w-3.5 h-3.5 ${autoFire ? "text-cyan-400 animate-spin" : ""}`} />
+            <span className="hidden sm:inline">AUTO-FIRE:</span>
+            <span>{autoFire ? "ON" : "OFF"}</span>
+          </button>
+
           {/* Starship Lives Indicators */}
           <div className="glass-panel px-3 py-2 rounded-xl border border-rose-500/30 flex items-center gap-1.5 sm:gap-2">
             {Array.from({ length: maxLives }).map((_, index) => {

@@ -86,8 +86,14 @@ export class GameEngine {
     left: false,
     right: false,
     touchVector: null,
+    touchAimVector: null,
+    mousePos: null,
+    isFiring: false,
     spacePressed: false,
   };
+
+  private isMouseDown: boolean = false;
+  public autoFireEnabled: boolean = false;
 
   private callbacks: EngineCallbacks = {};
 
@@ -95,8 +101,13 @@ export class GameEngine {
   private shakeIntensity: number = 0;
   private lastTime: number = 0;
   private animFrameId: number | null = null;
+
+  // Event listener references for clean teardown
   private boundKeyDown: (e: KeyboardEvent) => void;
   private boundKeyUp: (e: KeyboardEvent) => void;
+  private boundMouseMove: (e: MouseEvent) => void;
+  private boundMouseDown: (e: MouseEvent) => void;
+  private boundMouseUp: (e: MouseEvent) => void;
 
   constructor(canvas: HTMLCanvasElement, callbacks?: EngineCallbacks) {
     this.canvas = canvas;
@@ -115,8 +126,15 @@ export class GameEngine {
 
     this.boundKeyDown = this.handleKeyDown.bind(this);
     this.boundKeyUp = this.handleKeyUp.bind(this);
+    this.boundMouseMove = this.handleMouseMove.bind(this);
+    this.boundMouseDown = this.handleMouseDown.bind(this);
+    this.boundMouseUp = this.handleMouseUp.bind(this);
+
     window.addEventListener("keydown", this.boundKeyDown);
     window.addEventListener("keyup", this.boundKeyUp);
+    this.canvas.addEventListener("mousemove", this.boundMouseMove);
+    window.addEventListener("mousedown", this.boundMouseDown);
+    window.addEventListener("mouseup", this.boundMouseUp);
   }
 
   public setCallbacks(callbacks: EngineCallbacks) {
@@ -199,6 +217,7 @@ export class GameEngine {
     this.scoreSystem.reset();
     this.spawnSystem.reset();
     this.shakeIntensity = 0;
+    this.input.isFiring = this.autoFireEnabled;
 
     this.callbacks.onScoreChange?.(0);
     this.callbacks.onLivesChange?.(this.player.state.lives);
@@ -208,6 +227,52 @@ export class GameEngine {
 
   public setTouchVector(vector: Vector2D | null) {
     this.input.touchVector = vector;
+  }
+
+  public setTouchAimVector(vector: Vector2D | null) {
+    this.input.touchAimVector = vector;
+    if (vector) {
+      this.input.isFiring = true;
+    } else if (!this.isMouseDown && !this.input.spacePressed && !this.autoFireEnabled) {
+      this.input.isFiring = false;
+    }
+  }
+
+  public setAutoFire(enabled: boolean) {
+    this.autoFireEnabled = enabled;
+    if (enabled) {
+      this.input.isFiring = true;
+    } else if (!this.isMouseDown && !this.input.spacePressed && !this.input.touchAimVector) {
+      this.input.isFiring = false;
+    }
+  }
+
+  private handleMouseMove(e: MouseEvent) {
+    const rect = this.canvas.getBoundingClientRect();
+    if (rect.width > 0 && rect.height > 0) {
+      const scaleX = this.width / rect.width;
+      const scaleY = this.height / rect.height;
+      this.input.mousePos = {
+        x: (e.clientX - rect.left) * scaleX,
+        y: (e.clientY - rect.top) * scaleY,
+      };
+    }
+  }
+
+  private handleMouseDown(e: MouseEvent) {
+    if (e.button === 0) {
+      this.isMouseDown = true;
+      this.input.isFiring = true;
+    }
+  }
+
+  private handleMouseUp(e: MouseEvent) {
+    if (e.button === 0) {
+      this.isMouseDown = false;
+      if (!this.input.spacePressed && !this.autoFireEnabled && !this.input.touchAimVector) {
+        this.input.isFiring = false;
+      }
+    }
   }
 
   private handleKeyDown(e: KeyboardEvent) {
@@ -223,6 +288,10 @@ export class GameEngine {
     } else if (e.code === "KeyD" || e.code === "ArrowRight") {
       this.input.right = true;
       e.preventDefault();
+    } else if (e.code === "Space") {
+      e.preventDefault();
+      this.input.spacePressed = true;
+      this.input.isFiring = true;
     } else if (e.code === "KeyP" || e.code === "Escape") {
       e.preventDefault();
       if (this.status === "playing") {
@@ -238,6 +307,12 @@ export class GameEngine {
     else if (e.code === "KeyS" || e.code === "ArrowDown") this.input.down = false;
     else if (e.code === "KeyA" || e.code === "ArrowLeft") this.input.left = false;
     else if (e.code === "KeyD" || e.code === "ArrowRight") this.input.right = false;
+    else if (e.code === "Space") {
+      this.input.spacePressed = false;
+      if (!this.isMouseDown && !this.autoFireEnabled && !this.input.touchAimVector) {
+        this.input.isFiring = false;
+      }
+    }
   }
 
   private scheduleFrame() {
@@ -305,13 +380,12 @@ export class GameEngine {
     const hasRapidFire = this.activePowerUps.has("rapid_fire");
     const hasSpreadShot = this.activePowerUps.has("spread_shot");
 
-    // 4. Update Player
+    // 4. Update Player (Directional shooting, no nearest-meteor targeting)
     this.player.update(
       dt,
       this.input,
       this.width,
       this.height,
-      this.meteors,
       hasRapidFire,
       hasSpreadShot,
       (proj) => {
@@ -319,18 +393,18 @@ export class GameEngine {
         this.scoreSystem.shotsFired++;
         soundManager.playLaser(hasRapidFire ? 1.3 : 1.0);
       },
-      (thrusterP) => {
+      (particle) => {
         if (this.particles.length < 240) {
-          this.particles.push(thrusterP);
+          this.particles.push(particle);
         }
       }
     );
 
-    // 5. Update Projectiles
+    // 5. Update Projectiles (Strict directional velocity)
     this.projectiles = this.projectiles.filter((p) => {
       const alive = updateProjectile(p, dt);
       const inBounds =
-        p.x >= -20 && p.x <= this.width + 20 && p.y >= -20 && p.y <= this.height + 20;
+        p.x >= -30 && p.x <= this.width + 30 && p.y >= -30 && p.y <= this.height + 30;
       return alive && inBounds;
     });
 
@@ -391,6 +465,7 @@ export class GameEngine {
         if (!meteor) continue;
 
         meteor.hp -= hit.damage;
+        meteor.hitFlashTimer = 0.12; // Trigger white hit flash
 
         // Laser impact sparks
         this.particles.push(...createLaserImpactParticles(hit.hitX, hit.hitY, meteor.color));
@@ -470,16 +545,13 @@ export class GameEngine {
   }
 
   private destroyMeteor(meteor: MeteorEntity) {
-    // Remove from meteors
     this.meteors = this.meteors.filter((m) => m.id !== meteor.id);
 
-    // Audio & Particles
     soundManager.playExplosion(meteor.type === "large" ? "large" : meteor.type === "medium" ? "medium" : "small");
     this.particles.push(
       ...createExplosionParticles(meteor.x, meteor.y, meteor.type === "large" ? 30 : 16, meteor.color, "#ffffff")
     );
 
-    // Score
     const gained = this.scoreSystem.addMeteorScore(meteor.scoreValue);
     this.callbacks.onScoreChange?.(this.scoreSystem.score);
 
@@ -487,17 +559,14 @@ export class GameEngine {
       createFloatingText(`+${gained}`, meteor.x, meteor.y, meteor.color, 16)
     );
 
-    // Screen shake on medium/large
     if (meteor.type === "large") this.shakeIntensity = Math.max(this.shakeIntensity, 10);
     else if (meteor.type === "medium") this.shakeIntensity = Math.max(this.shakeIntensity, 6);
 
-    // Split meteor fragments
     const fragments = splitMeteor(meteor);
     if (fragments.length > 0) {
       this.meteors.push(...fragments);
     }
 
-    // Power-up drop roll
     if (Math.random() < POWER_UP_DROP_RATE) {
       const types: PowerUpType[] = [
         "rapid_fire",
@@ -516,7 +585,6 @@ export class GameEngine {
     const config = POWER_UP_CONFIGS[p.type];
     soundManager.playPowerUpCollect();
 
-    // Bonus score
     const bonus = this.scoreSystem.addPowerUpScore(20);
     this.callbacks.onScoreChange?.(this.scoreSystem.score);
 
@@ -524,7 +592,6 @@ export class GameEngine {
       createFloatingText(`+${bonus} ${config.name}!`, p.x, p.y, config.color, 18)
     );
 
-    // Execute effect
     switch (p.type) {
       case "rapid_fire":
       case "spread_shot":
@@ -566,7 +633,6 @@ export class GameEngine {
     soundManager.playNovaBurst();
     this.shakeIntensity = 22;
 
-    // Shockwave ring
     this.shockwaves.push({
       x: this.player.state.x,
       y: this.player.state.y,
@@ -578,7 +644,6 @@ export class GameEngine {
       lineWidth: 5,
     });
 
-    // Destroy or heavily damage all active meteors
     const active = [...this.meteors];
     for (const m of active) {
       this.destroyMeteor(m);
@@ -624,7 +689,6 @@ export class GameEngine {
         totalDuration: cfg.duration,
       });
     }
-    // Inform UI if powerup changes
   }
 
   public getActivePowerUps(): ActivePowerUpState[] {
@@ -711,7 +775,7 @@ export class GameEngine {
       renderProjectile(this.ctx, p);
     }
 
-    // 7. Particles
+    // 7. Particles (Thrusters, Muzzle Flashes, Impacts, Explosions)
     for (const p of this.particles) {
       renderParticle(this.ctx, p);
     }
@@ -726,6 +790,44 @@ export class GameEngine {
       renderFloatingText(this.ctx, t);
     }
 
+    // 10. Futuristic Holographic Targeting Reticle at mouse position
+    if (this.status === "playing" && this.input.mousePos) {
+      const mx = this.input.mousePos.x;
+      const my = this.input.mousePos.y;
+
+      this.ctx.save();
+      this.ctx.strokeStyle = "rgba(0, 240, 255, 0.75)";
+      this.ctx.shadowColor = "#00f0ff";
+      this.ctx.shadowBlur = 8;
+      this.ctx.lineWidth = 1.5;
+
+      // Outer targeting ring
+      this.ctx.beginPath();
+      this.ctx.arc(mx, my, 12, 0, Math.PI * 2);
+      this.ctx.stroke();
+
+      // Precision crosshair tick marks
+      const tick = 6;
+      this.ctx.beginPath();
+      this.ctx.moveTo(mx - 16, my);
+      this.ctx.lineTo(mx - 16 + tick, my);
+      this.ctx.moveTo(mx + 16, my);
+      this.ctx.lineTo(mx + 16 - tick, my);
+      this.ctx.moveTo(mx, my - 16);
+      this.ctx.lineTo(mx, my - 16 + tick);
+      this.ctx.moveTo(mx, my + 16);
+      this.ctx.lineTo(mx, my + 16 - tick);
+      this.ctx.stroke();
+
+      // Center laser dot
+      this.ctx.fillStyle = "#ffffff";
+      this.ctx.beginPath();
+      this.ctx.arc(mx, my, 2, 0, Math.PI * 2);
+      this.ctx.fill();
+
+      this.ctx.restore();
+    }
+
     this.ctx.restore();
   }
 
@@ -736,5 +838,8 @@ export class GameEngine {
     }
     window.removeEventListener("keydown", this.boundKeyDown);
     window.removeEventListener("keyup", this.boundKeyUp);
+    this.canvas.removeEventListener("mousemove", this.boundMouseMove);
+    window.removeEventListener("mousedown", this.boundMouseDown);
+    window.removeEventListener("mouseup", this.boundMouseUp);
   }
 }

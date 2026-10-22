@@ -35,6 +35,36 @@ export function createParticle(
   };
 }
 
+export function createMuzzleFlashParticles(
+  x: number,
+  y: number,
+  angle: number,
+  color: string = "#00f0ff"
+): ParticleEntity[] {
+  const particles: ParticleEntity[] = [];
+  const count = 5;
+
+  for (let i = 0; i < count; i++) {
+    const spread = (Math.random() - 0.5) * 0.5;
+    const pAngle = angle + spread;
+    const speed = 120 + Math.random() * 140;
+    particles.push(
+      createParticle(
+        x,
+        y,
+        Math.cos(pAngle) * speed,
+        Math.sin(pAngle) * speed,
+        1.8 + Math.random() * 1.5,
+        Math.random() > 0.3 ? color : "#ffffff",
+        0.1 + Math.random() * 0.08,
+        true
+      )
+    );
+  }
+
+  return particles;
+}
+
 export function createExplosionParticles(
   x: number,
   y: number,
