@@ -113,8 +113,8 @@ export function validateScoreSubmission(
   // Large splits into 2 medium (25*2 each) which split into 2 small (10*2 each).
   // Total potential yield per destroyed meteor chain <= 300 pts.
   // Passive survival bonus <= 10 pts per 10s * 2 = 2 pts/sec.
-  // Generous ceiling factor of 2x for power-up bonuses:
-  const maxMeteorsScore = meteorsDestroyed * 350;
+  // Generous ceiling factor accounting for 2x power-up multiplier and up to 3x combo multipliers:
+  const maxMeteorsScore = meteorsDestroyed * 700;
   const maxSurvivalScore = survivalSeconds * 5;
   const maxTheoreticalScore = maxMeteorsScore + maxSurvivalScore + 500;
 

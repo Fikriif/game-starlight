@@ -1,6 +1,6 @@
 "use client";
 
-import { Play, RotateCcw, Home, Volume2 } from "lucide-react";
+import { Play, RotateCcw, Home } from "lucide-react";
 import Link from "next/link";
 import SoundToggle from "../ui/SoundToggle";
 import { soundManager } from "@/game/audio/SoundManager";

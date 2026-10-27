@@ -1,6 +1,5 @@
 import {
   PlayerState,
-  Vector2D,
   ProjectileEntity,
   InputState,
   ParticleEntity,

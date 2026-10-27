@@ -1,19 +1,22 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { Heart, Pause, Play, RotateCcw, Crosshair, Zap } from "lucide-react";
+import { Heart, Pause, Play, RotateCcw, Crosshair, Flame } from "lucide-react";
 import SoundToggle from "../ui/SoundToggle";
-import { ActivePowerUpState } from "@/game/types/game";
+import { ActivePowerUpState, ComboState, MeteorAlertInfo } from "@/game/types/game";
 
 interface GameHudProps {
   score: number;
   lives: number;
   maxLives: number;
   wave: number;
+  waveTitle?: string;
+  waveTransition?: { wave: number; title: string } | null;
+  comboState?: ComboState;
   survivalSeconds: number;
   activePowerUps: ActivePowerUpState[];
   isPaused: boolean;
   autoFire: boolean;
+  meteorAlert?: MeteorAlertInfo | null;
   onToggleAutoFire: () => void;
   onPauseToggle: () => void;
   onRestart: () => void;
@@ -24,10 +27,14 @@ export default function GameHud({
   lives,
   maxLives,
   wave,
+  waveTitle,
+  waveTransition,
+  comboState,
   survivalSeconds,
   activePowerUps,
   isPaused,
   autoFire,
+  meteorAlert,
   onToggleAutoFire,
   onPauseToggle,
   onRestart,
@@ -41,9 +48,10 @@ export default function GameHud({
     <div className="absolute inset-x-0 top-0 p-3 sm:p-5 pointer-events-none flex flex-col justify-between select-none z-20">
       {/* Top HUD Bar */}
       <div className="flex items-center justify-between gap-3 max-w-5xl mx-auto w-full">
-        {/* Left: Score & Multiplier */}
-        <div className="flex items-center gap-3">
-          <div className="glass-panel px-3.5 py-2 rounded-xl flex flex-col border border-cyan-500/30 shadow-[0_0_15px_rgba(0,240,255,0.15)]">
+        {/* Left: Score & Wave & Combo */}
+        <div className="flex items-center gap-2 sm:gap-3">
+          {/* Score Display */}
+          <div className="glass-panel px-3 sm:px-3.5 py-1.5 sm:py-2 rounded-xl flex flex-col border border-cyan-500/30 shadow-[0_0_15px_rgba(0,240,255,0.15)]">
             <span className="text-[10px] tracking-widest text-cyan-400 font-mono uppercase">
               SCORE
             </span>
@@ -60,19 +68,54 @@ export default function GameHud({
           </div>
 
           {/* Wave Badge */}
-          <div className="glass-panel px-3 py-2 rounded-xl border border-purple-500/30 flex flex-col hidden sm:flex">
-            <span className="text-[10px] tracking-widest text-purple-400 font-mono uppercase">
-              WAVE
-            </span>
-            <span className="text-lg sm:text-xl font-black font-mono text-white text-glow-purple">
-              {wave}
-            </span>
+          <div className="glass-panel px-3 py-1.5 sm:py-2 rounded-xl border border-purple-500/30 flex flex-col hidden sm:flex">
+            <div className="flex items-center gap-1.5">
+              <span className="text-[10px] tracking-widest text-purple-400 font-mono uppercase">
+                WAVE
+              </span>
+              <span className="text-base sm:text-lg font-black font-mono text-white text-glow-purple">
+                {wave}
+              </span>
+            </div>
+            {waveTitle && (
+              <span className="text-[9px] font-mono tracking-wide text-purple-300/80 truncate max-w-[125px] uppercase">
+                {waveTitle}
+              </span>
+            )}
           </div>
+
+          {/* Dynamic Combo Multiplier Badge */}
+          {comboState && comboState.count >= 2 && (
+            <div className="glass-panel px-2.5 sm:px-3 py-1.5 rounded-xl border border-amber-500/40 bg-[#0d091a]/85 shadow-[0_0_15px_rgba(245,158,11,0.25)] flex items-center gap-2 animate-pulse pointer-events-auto">
+              <Flame className="w-4 h-4 text-amber-400 shrink-0" />
+              <div className="flex flex-col">
+                <div className="flex items-center gap-1.5">
+                  <span className="text-xs sm:text-sm font-black font-mono text-amber-300 text-glow-amber">
+                    {comboState.multiplier.toFixed(1)}x
+                  </span>
+                  <span className="text-[9px] font-mono font-bold tracking-widest text-amber-400/90 uppercase hidden xs:inline">
+                    {comboState.tierLabel || "STREAK"}
+                  </span>
+                </div>
+                <div className="w-14 sm:w-16 h-1 bg-slate-800 rounded-full overflow-hidden mt-0.5">
+                  <div
+                    className="h-full bg-gradient-to-r from-amber-400 via-orange-500 to-rose-500 transition-all duration-75"
+                    style={{
+                      width: `${Math.max(
+                        0,
+                        Math.min(100, (comboState.timeRemaining / comboState.maxDuration) * 100)
+                      )}%`,
+                    }}
+                  />
+                </div>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Center: Survival Timer & Aiming Directive */}
         <div className="flex flex-col items-center gap-1">
-          <div className="glass-panel px-4 py-2 rounded-xl border border-blue-500/30 flex flex-col items-center">
+          <div className="glass-panel px-3.5 sm:px-4 py-1.5 sm:py-2 rounded-xl border border-blue-500/30 flex flex-col items-center">
             <span className="text-[10px] tracking-widest text-blue-300 font-mono uppercase">
               SURVIVAL
             </span>
@@ -152,6 +195,46 @@ export default function GameHud({
           <SoundToggle className="rounded-xl" />
         </div>
       </div>
+
+      {/* Wave Transition Announcement Banner */}
+      {waveTransition && (
+        <div className="mt-4 mx-auto pointer-events-none z-30 animate-fade-in-down">
+          <div className="px-6 py-2.5 rounded-2xl glass-panel border border-cyan-400/60 shadow-[0_0_35px_rgba(0,240,255,0.35)] flex flex-col items-center gap-0.5 bg-[#050718]/90">
+            <div className="flex items-center gap-2 text-[10px] sm:text-xs font-mono font-bold tracking-widest text-cyan-300 uppercase">
+              <span className="w-2 h-2 rounded-full bg-cyan-400 animate-ping" />
+              WAVE {waveTransition.wave} INITIATED
+            </div>
+            <span className="text-base sm:text-xl font-black font-mono text-white text-glow-cyan tracking-wider uppercase">
+              {waveTransition.title}
+            </span>
+          </div>
+        </div>
+      )}
+
+      {/* Meteor Variant Detection Banner (Short, Non-Intrusive) */}
+      {meteorAlert && !waveTransition && (
+        <div
+          className="mt-2.5 mx-auto px-4 py-1.5 rounded-full glass-panel border flex items-center gap-2.5 shadow-lg transition-all animate-fade-in-down pointer-events-auto"
+          style={{
+            borderColor: `${meteorAlert.color}80`,
+            boxShadow: `0 0 16px ${meteorAlert.color}35`,
+          }}
+        >
+          <span
+            className="w-2.5 h-2.5 rounded-full animate-ping"
+            style={{ backgroundColor: meteorAlert.color }}
+          />
+          <strong
+            className="text-xs font-mono font-bold tracking-wider uppercase"
+            style={{ color: meteorAlert.color }}
+          >
+            {meteorAlert.label}
+          </strong>
+          <span className="text-[11px] text-slate-300 font-mono hidden sm:inline">
+            — {meteorAlert.description}
+          </span>
+        </div>
+      )}
 
       {/* Active Power-Up Timers Bar (Floating Sub-HUD) */}
       {activePowerUps.length > 0 && (

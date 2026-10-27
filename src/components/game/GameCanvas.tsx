@@ -4,8 +4,10 @@ import { useEffect, useRef, useState, useCallback } from "react";
 import { GameEngine } from "@/game/engine/GameEngine";
 import {
   ActivePowerUpState,
+  ComboState,
   GameStats,
   GameStatus,
+  MeteorAlertInfo,
   Vector2D,
 } from "@/game/types/game";
 import GameHud from "../hud/GameHud";
@@ -24,17 +26,29 @@ export default function GameCanvas() {
   const [score, setScore] = useState(0);
   const [lives, setLives] = useState(3);
   const [wave, setWave] = useState(1);
+  const [waveTitle, setWaveTitle] = useState("Survival Training");
+  const [waveTransition, setWaveTransition] = useState<{ wave: number; title: string } | null>(null);
+  const [comboState, setComboState] = useState<ComboState>({
+    count: 0,
+    multiplier: 1.0,
+    timeRemaining: 0,
+    maxDuration: 2.8,
+    tierLabel: "",
+  });
   const [survivalSeconds, setSurvivalSeconds] = useState(0);
   const [activePowerUps, setActivePowerUps] = useState<ActivePowerUpState[]>([]);
   const [autoFire, setAutoFire] = useState(false);
   const [gameOverStats, setGameOverStats] = useState<GameStats | null>(null);
+  const [meteorAlert, setMeteorAlert] = useState<MeteorAlertInfo | null>(null);
 
   // Run Session Token & ID
   const [runId, setRunId] = useState<string | null>(null);
   const [runToken, setRunToken] = useState<string | null>(null);
 
-  // Survival seconds timer updater
+  // Timers
   const survivalTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const meteorAlertTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const waveTransitionTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   // Initialize new run session
   const startNewRun = useCallback(async () => {
@@ -57,7 +71,18 @@ export default function GameCanvas() {
     }
 
     setSurvivalSeconds(0);
+    setWave(1);
+    setWaveTitle("Survival Training");
+    setWaveTransition(null);
+    setComboState({
+      count: 0,
+      multiplier: 1.0,
+      timeRemaining: 0,
+      maxDuration: 2.8,
+      tierLabel: "",
+    });
     setGameOverStats(null);
+    setMeteorAlert(null);
 
     if (engineRef.current) {
       engineRef.current.start();
@@ -77,7 +102,30 @@ export default function GameCanvas() {
       onScoreChange: (newScore) => setScore(newScore),
       onLivesChange: (newLives) => setLives(newLives),
       onWaveChange: (newWave) => setWave(newWave),
+      onWaveTransition: (newWave, title) => {
+        setWave(newWave);
+        setWaveTitle(title);
+        setWaveTransition({ wave: newWave, title });
+        if (waveTransitionTimerRef.current) {
+          clearTimeout(waveTransitionTimerRef.current);
+        }
+        waveTransitionTimerRef.current = setTimeout(() => {
+          setWaveTransition(null);
+        }, 3500);
+      },
+      onComboChange: (newCombo) => {
+        setComboState(newCombo);
+      },
       onStatusChange: (newStatus) => setStatus(newStatus),
+      onMeteorAlert: (alert) => {
+        setMeteorAlert(alert);
+        if (meteorAlertTimerRef.current) {
+          clearTimeout(meteorAlertTimerRef.current);
+        }
+        meteorAlertTimerRef.current = setTimeout(() => {
+          setMeteorAlert(null);
+        }, 3200);
+      },
       onPowerUpCollected: () => {
         if (engineRef.current) {
           setActivePowerUps(engineRef.current.getActivePowerUps());
@@ -120,6 +168,12 @@ export default function GameCanvas() {
       }
       if (survivalTimerRef.current) {
         clearInterval(survivalTimerRef.current);
+      }
+      if (meteorAlertTimerRef.current) {
+        clearTimeout(meteorAlertTimerRef.current);
+      }
+      if (waveTransitionTimerRef.current) {
+        clearTimeout(waveTransitionTimerRef.current);
       }
     };
   }, [startNewRun]);
@@ -191,10 +245,14 @@ export default function GameCanvas() {
         lives={lives}
         maxLives={3}
         wave={wave}
+        waveTitle={waveTitle}
+        waveTransition={waveTransition}
+        comboState={comboState}
         survivalSeconds={survivalSeconds}
         activePowerUps={activePowerUps}
         isPaused={status === "paused"}
         autoFire={autoFire}
+        meteorAlert={meteorAlert}
         onToggleAutoFire={handleToggleAutoFire}
         onPauseToggle={handlePauseToggle}
         onRestart={startNewRun}

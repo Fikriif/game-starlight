@@ -1,4 +1,5 @@
-import { DIFFICULTY_CONFIG } from "../config/constants";
+import { DIFFICULTY_CONFIG, COMBO_CONFIG } from "../config/constants";
+import { ComboState } from "../types/game";
 
 export class ScoreSystem {
   public score: number = 0;
@@ -8,6 +9,11 @@ export class ScoreSystem {
   public powerUpsCollected: number = 0;
   public shotsFired: number = 0;
   public shotsHit: number = 0;
+
+  // Combo Streak Mechanics
+  public combo: number = 0;
+  public comboTimer: number = 0;
+  public maxCombo: number = 0;
 
   private passiveTimer: number = 0;
 
@@ -20,17 +26,29 @@ export class ScoreSystem {
     this.shotsFired = 0;
     this.shotsHit = 0;
     this.passiveTimer = 0;
+    this.combo = 0;
+    this.comboTimer = 0;
+    this.maxCombo = 0;
   }
 
   public update(dt: number): number {
     let gainedScore = 0;
 
-    // Multiplier timer
+    // Power-up Multiplier timer
     if (this.multiplierTimeRemaining > 0) {
       this.multiplierTimeRemaining -= dt;
       if (this.multiplierTimeRemaining <= 0) {
         this.multiplier = 1;
         this.multiplierTimeRemaining = 0;
+      }
+    }
+
+    // Combo Streak timer countdown
+    if (this.comboTimer > 0) {
+      this.comboTimer -= dt;
+      if (this.comboTimer <= 0) {
+        this.combo = 0;
+        this.comboTimer = 0;
       }
     }
 
@@ -46,8 +64,64 @@ export class ScoreSystem {
     return gainedScore;
   }
 
-  public addMeteorScore(basePoints: number): number {
+  public get comboMultiplier(): number {
+    return this.getComboMultiplier();
+  }
+
+  public getComboMultiplier(): number {
+    for (const tier of COMBO_CONFIG.TIERS) {
+      if (this.combo >= tier.minCombo) {
+        return tier.multiplier;
+      }
+    }
+    return 1.0;
+  }
+
+  public getComboTierLabel(): string {
+    for (const tier of COMBO_CONFIG.TIERS) {
+      if (this.combo >= tier.minCombo) {
+        return tier.label;
+      }
+    }
+    return "";
+  }
+
+  public getComboState(): ComboState {
+    return {
+      count: this.combo,
+      multiplier: this.getComboMultiplier(),
+      timeRemaining: Math.max(0, this.comboTimer),
+      maxDuration: COMBO_CONFIG.WINDOW_DURATION,
+      tierLabel: this.getComboTierLabel(),
+    };
+  }
+
+  /**
+   * Adds score for destroying a meteor entity.
+   * If applyCombo is true (active gameplay), advances the combo streak and awards combo & wave multipliers.
+   * If applyCombo is false (standard test calls), awards base score multiplied only by active 2X power-up.
+   */
+  public addMeteorScore(
+    basePoints: number,
+    currentWave: number = 1,
+    applyCombo: boolean = false
+  ): number {
     this.meteorsDestroyed++;
+
+    if (applyCombo) {
+      this.combo++;
+      this.comboTimer = COMBO_CONFIG.WINDOW_DURATION;
+      if (this.combo > this.maxCombo) {
+        this.maxCombo = this.combo;
+      }
+
+      const waveBonus = Math.max(0, (currentWave - 1) * 5);
+      const comboMult = this.getComboMultiplier();
+      const points = Math.round((basePoints + waveBonus) * this.multiplier * comboMult);
+      this.score += points;
+      return points;
+    }
+
     const points = basePoints * this.multiplier;
     this.score += points;
     return points;

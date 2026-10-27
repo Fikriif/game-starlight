@@ -13,6 +13,7 @@ import {
   CheckCircle,
   AlertCircle,
   Loader2,
+  Flame,
 } from "lucide-react";
 import confetti from "canvas-confetti";
 import { GameStats } from "@/game/types/game";
@@ -39,10 +40,7 @@ export default function GameOverModal({
     "submitting" | "success" | "error"
   >("submitting");
   const [statusMessage, setStatusMessage] = useState("Verifying and submitting score...");
-  const [isNewRecord, setIsNewRecord] = useState(false);
-
-  useEffect(() => {
-    // 1. Update local profile stats
+  const [isNewRecord] = useState(() => {
     const currentRunId = runId || `run_${Date.now()}`;
     const { isNewRecord: newRecord } = updateProfileAfterRun(
       currentRunId,
@@ -51,9 +49,11 @@ export default function GameOverModal({
       stats.wave,
       stats.meteorsDestroyed
     );
-    setIsNewRecord(newRecord);
+    return newRecord;
+  });
 
-    if (newRecord) {
+  useEffect(() => {
+    if (isNewRecord) {
       try {
         confetti({
           particleCount: 80,
@@ -109,7 +109,7 @@ export default function GameOverModal({
     };
 
     submitScore();
-  }, [runId, runToken, stats]);
+  }, [runId, runToken, stats, isNewRecord]);
 
   // Format survival time to MM:SS
   const mins = Math.floor(stats.survivalSeconds / 60);
@@ -179,11 +179,21 @@ export default function GameOverModal({
           </div>
 
           <div className="p-2.5 rounded-xl bg-slate-900/60 border border-slate-800 flex items-center gap-2.5">
-            <Sparkles className="w-4 h-4 text-amber-400 shrink-0" />
+            <Flame className="w-4 h-4 text-amber-400 shrink-0" />
             <div>
-              <div className="text-[10px] text-slate-400">ACCURACY</div>
-              <div className="text-sm font-bold text-slate-200">{accuracy}%</div>
+              <div className="text-[10px] text-slate-400">MAX COMBO</div>
+              <div className="text-sm font-bold text-amber-300">
+                {stats.maxCombo && stats.maxCombo > 0 ? `${stats.maxCombo}x Streak` : "0x"}
+              </div>
             </div>
+          </div>
+
+          <div className="col-span-2 p-2.5 rounded-xl bg-slate-900/60 border border-slate-800 flex items-center justify-between font-mono">
+            <div className="flex items-center gap-2">
+              <Sparkles className="w-4 h-4 text-emerald-400 shrink-0" />
+              <span className="text-[10px] text-slate-400">BLASTER ACCURACY</span>
+            </div>
+            <span className="text-sm font-bold text-emerald-300">{accuracy}%</span>
           </div>
         </div>
 

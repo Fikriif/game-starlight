@@ -1,6 +1,17 @@
 export type GameStatus = "idle" | "playing" | "paused" | "gameover";
 
-export type MeteorType = "small" | "medium" | "large" | "pulsar";
+export type MeteorType =
+  | "standard"
+  | "speed"
+  | "heavy"
+  | "splitting"
+  | "splitting_fragment"
+  | "explosive"
+  | "drifting"
+  | "small"
+  | "medium"
+  | "large"
+  | "pulsar";
 
 export type PowerUpType =
   | "rapid_fire"
@@ -73,6 +84,39 @@ export interface MeteorEntity {
   glowColor: string;
   wobblePhase?: number;
   hitFlashTimer?: number; // Timer for damage hit flash
+
+  // Special ability and variant states
+  baseSpeed?: number;
+  baseVx?: number;
+  baseVy?: number;
+  hasAwardedScore?: boolean;
+
+  // Speed Meteor properties
+  burstCooldownTimer?: number;
+  burstChargeTimer?: number;
+  burstActiveTimer?: number;
+  isChargingBurst?: boolean;
+  isBursting?: boolean;
+
+  // Explosive Meteor properties
+  fuseTimer?: number;
+  maxFuse?: number;
+  explosionRadius?: number;
+  hasExploded?: boolean;
+  warningPulsePhase?: number;
+
+  // Splitting Meteor properties
+  canSplit?: boolean;
+  hasSplit?: boolean;
+  generation?: number;
+
+  // Drifting Meteor properties
+  driftPhase?: number;
+  driftFrequency?: number;
+  driftAmplitude?: number;
+
+  // Trail particle timer
+  trailTimer?: number;
 }
 
 export interface PowerUpEntity {
@@ -133,6 +177,15 @@ export interface GameStats {
   powerUpsCollected: number;
   accuracyShotsFired: number;
   accuracyShotsHit: number;
+  maxCombo: number;
+}
+
+export interface ComboState {
+  count: number;
+  multiplier: number;
+  timeRemaining: number;
+  maxDuration: number;
+  tierLabel: string;
 }
 
 export interface InputState {
@@ -147,12 +200,22 @@ export interface InputState {
   spacePressed: boolean;
 }
 
+export interface MeteorAlertInfo {
+  type: MeteorType;
+  label: string;
+  description: string;
+  color: string;
+}
+
 export interface EngineCallbacks {
   onScoreChange?: (score: number) => void;
   onLivesChange?: (lives: number) => void;
   onWaveChange?: (wave: number) => void;
+  onWaveTransition?: (wave: number, title: string) => void;
+  onComboChange?: (comboState: ComboState) => void;
   onGameOver?: (stats: GameStats) => void;
   onPowerUpCollected?: (powerUp: PowerUpConfig) => void;
   onPowerUpExpired?: (type: PowerUpType) => void;
   onStatusChange?: (status: GameStatus) => void;
+  onMeteorAlert?: (alert: MeteorAlertInfo) => void;
 }

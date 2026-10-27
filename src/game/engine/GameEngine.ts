@@ -1,13 +1,14 @@
 import {
   ActivePowerUpState,
+  ComboState,
   EngineCallbacks,
   FloatingTextEntity,
   GameStats,
   GameStatus,
   InputState,
   MeteorEntity,
+  MeteorType,
   ParticleEntity,
-  PowerUpConfig,
   PowerUpEntity,
   PowerUpType,
   ProjectileEntity,
@@ -15,7 +16,6 @@ import {
 } from "../types/game";
 import {
   GAME_CANVAS,
-  PLAYER_CONFIG,
   POWER_UP_CONFIGS,
   POWER_UP_DROP_RATE,
 } from "../config/constants";
@@ -30,6 +30,7 @@ import { createPowerUp, renderPowerUp, updatePowerUp } from "../entities/PowerUp
 import {
   createExplosionParticles,
   createLaserImpactParticles,
+  createParticle,
   renderParticle,
   ShockwaveRing,
   updateParticle,
@@ -97,8 +98,11 @@ export class GameEngine {
 
   private callbacks: EngineCallbacks = {};
 
+  private introducedMeteorTypes: Set<MeteorType> = new Set();
+
   private stars: Star[] = [];
   private shakeIntensity: number = 0;
+  private flashIntensity: number = 0;
   private lastTime: number = 0;
   private animFrameId: number | null = null;
 
@@ -217,11 +221,14 @@ export class GameEngine {
     this.scoreSystem.reset();
     this.spawnSystem.reset();
     this.shakeIntensity = 0;
+    this.flashIntensity = 0;
+    this.introducedMeteorTypes.clear();
     this.input.isFiring = this.autoFireEnabled;
 
     this.callbacks.onScoreChange?.(0);
     this.callbacks.onLivesChange?.(this.player.state.lives);
     this.callbacks.onWaveChange?.(1);
+    this.callbacks.onComboChange?.(this.scoreSystem.getComboState());
     this.notifyPowerUpsChange();
   }
 
@@ -342,24 +349,28 @@ export class GameEngine {
     // 1. Difficulty & Wave progression
     const waveChanged = this.difficultySystem.update(dt);
     if (waveChanged) {
+      const waveTitle = this.difficultySystem.getWaveTitle();
       this.callbacks.onWaveChange?.(this.difficultySystem.wave);
+      this.callbacks.onWaveTransition?.(this.difficultySystem.wave, waveTitle);
       soundManager.playPowerUpCollect();
       this.floatingTexts.push(
         createFloatingText(
-          `WAVE ${this.difficultySystem.wave}!`,
+          `WAVE ${this.difficultySystem.wave}: ${waveTitle.toUpperCase()}!`,
           this.width / 2,
           this.height * 0.35,
           "#00f0ff",
-          26
+          24
         )
       );
     }
 
-    // 2. Score system passive timer
+    // 2. Score system passive timer & combo timer decay
     const passivePoints = this.scoreSystem.update(dt);
     if (passivePoints > 0) {
       this.callbacks.onScoreChange?.(this.scoreSystem.score);
     }
+    // Update combo state for HUD countdown meter
+    this.callbacks.onComboChange?.(this.scoreSystem.getComboState());
 
     // 3. Power-Up active timers
     let powerUpStateDirty = false;
@@ -408,9 +419,26 @@ export class GameEngine {
       return alive && inBounds;
     });
 
-    // 6. Update Meteors
+    // 6. Update Meteors with special variant callbacks
     for (const m of this.meteors) {
-      updateMeteor(m, dt);
+      updateMeteor(m, dt, {
+        onSpeedWarning: () => soundManager.playSpeedWarning(),
+        onSpeedBurst: () => soundManager.playSpeedBurst(),
+        onExplosionWarning: () => soundManager.playDetonationWarning(),
+        onEmitTrail: (x, y, color, radius) => {
+          if (this.particles.length < 260) {
+            this.particles.push(createParticle(x, y, 0, 0, radius, color, 0.18, true));
+          }
+        },
+      });
+    }
+
+    // Check for expired explosive meteor fuses
+    const expiredFuses = this.meteors.filter(
+      (m) => m.type === "explosive" && m.fuseTimer !== undefined && m.fuseTimer <= 0 && !m.hasExploded
+    );
+    for (const expired of expiredFuses) {
+      this.destroyMeteor(expired);
     }
 
     // Filter meteors out of bounds (with a generous border margin)
@@ -424,8 +452,8 @@ export class GameEngine {
       );
     });
 
-    // 7. Spawn new meteors
-    const newMeteor = this.spawnSystem.update(
+    // 7. Spawn new meteors (supports coordinated multi-meteor spawns in Wave 3+)
+    const newMeteors = this.spawnSystem.update(
       dt,
       this.width,
       this.height,
@@ -433,8 +461,52 @@ export class GameEngine {
       this.meteors.length,
       this.difficultySystem
     );
-    if (newMeteor) {
+    for (const newMeteor of newMeteors) {
       this.meteors.push(newMeteor);
+
+      // Introduce special meteor variants with a brief non-intrusive notification
+      if (!this.introducedMeteorTypes.has(newMeteor.type)) {
+        this.introducedMeteorTypes.add(newMeteor.type);
+        const badges: Record<string, { label: string; description: string; color: string }> = {
+          speed: {
+            label: "SPEED METEOR",
+            description: "Supersonic bursts, lead your crosshair!",
+            color: "#06b6d4",
+          },
+          heavy: {
+            label: "HEAVY TITAN",
+            description: "Dense armor plates, requires focused fire!",
+            color: "#a855f7",
+          },
+          splitting: {
+            label: "SPLITTING METEOR",
+            description: "Shatters into 2 independent fragments!",
+            color: "#10b981",
+          },
+          explosive: {
+            label: "EXPLOSIVE METEOR",
+            description: "Hazardous! Avoid detonation blast shockwave!",
+            color: "#ef4444",
+          },
+          drifting: {
+            label: "DRIFTING METEOR",
+            description: "Sinusoidal steering pattern, track carefully!",
+            color: "#ec4899",
+          },
+        };
+        const badge = badges[newMeteor.type];
+        if (badge) {
+          this.callbacks.onMeteorAlert?.({
+            type: newMeteor.type,
+            label: badge.label,
+            description: badge.description,
+            color: badge.color,
+          });
+          this.floatingTexts.push(
+            createFloatingText(badge.label, this.width / 2, this.height * 0.28, badge.color, 18)
+          );
+        }
+      }
     }
 
     // 8. Update Power-Ups
@@ -453,7 +525,7 @@ export class GameEngine {
     // 11. Update Floating Texts
     this.floatingTexts = this.floatingTexts.filter((t) => updateFloatingText(t, dt));
 
-    // 12. Check Collisions: Projectile vs Meteor
+    // 12. Check Collisions: Projectile vs Meteor (Directional Projectiles)
     const hits = checkProjectileMeteorCollisions(this.projectiles, this.meteors);
     if (hits.length > 0) {
       const hitProjectileIds = new Set(hits.map((h) => h.projectileId));
@@ -466,6 +538,11 @@ export class GameEngine {
 
         meteor.hp -= hit.damage;
         meteor.hitFlashTimer = 0.12; // Trigger white hit flash
+
+        // Play heavy impact audio if heavy meteor
+        if (meteor.type === "heavy") {
+          soundManager.playHeavyDamage();
+        }
 
         // Laser impact sparks
         this.particles.push(...createLaserImpactParticles(hit.hitX, hit.hitY, meteor.color));
@@ -480,45 +557,7 @@ export class GameEngine {
     // 13. Check Collisions: Player vs Meteor
     const collidedMeteor = checkPlayerMeteorCollisions(this.player.state, this.meteors);
     if (collidedMeteor) {
-      const hitResult = this.player.hit();
-
-      if (hitResult === ("shield" as unknown as boolean)) {
-        // Shield absorbed the hit
-        soundManager.playShieldDeflect();
-        this.shakeIntensity = 8;
-        this.shockwaves.push({
-          x: this.player.state.x,
-          y: this.player.state.y,
-          radius: 10,
-          maxRadius: 70,
-          color: "#38bdf8",
-          alpha: 1.0,
-          speed: 250,
-          lineWidth: 3,
-        });
-        this.floatingTexts.push(
-          createFloatingText("SHIELD DEFLECT!", this.player.state.x, this.player.state.y - 30, "#38bdf8", 16)
-        );
-      } else if (hitResult === true) {
-        // Life lost!
-        soundManager.playPlayerHit();
-        this.shakeIntensity = 18;
-        this.callbacks.onLivesChange?.(this.player.state.lives);
-
-        // Player explosion sparks
-        this.particles.push(
-          ...createExplosionParticles(this.player.state.x, this.player.state.y, 24, "#ff007f", "#ffffff")
-        );
-
-        this.floatingTexts.push(
-          createFloatingText("-1 LIFE!", this.player.state.x, this.player.state.y - 30, "#ff007f", 20)
-        );
-
-        if (this.player.state.lives <= 0) {
-          this.handleGameOver();
-          return;
-        }
-      }
+      this.applyPlayerDamage(collidedMeteor.x, collidedMeteor.y);
     }
 
     // 14. Check Collisions: Player vs Power-Up
@@ -538,36 +577,181 @@ export class GameEngine {
       star.twinklePhase += dt * 3;
     }
 
-    // 16. Screen shake decay
+    // 16. Screen shake & flash decay
     if (this.shakeIntensity > 0) {
       this.shakeIntensity = Math.max(0, this.shakeIntensity - 35 * dt);
+    }
+    if (this.flashIntensity > 0) {
+      this.flashIntensity = Math.max(0, this.flashIntensity - 2.2 * dt);
+    }
+  }
+
+  private applyPlayerDamage(sourceX: number, sourceY: number, customLabel?: string): boolean {
+    const hitResult = this.player.hit();
+
+    if (hitResult === ("shield" as unknown as boolean)) {
+      // Shield absorbed the hit
+      soundManager.playShieldDeflect();
+      this.shakeIntensity = Math.max(this.shakeIntensity, 8);
+      this.shockwaves.push({
+        x: this.player.state.x,
+        y: this.player.state.y,
+        radius: 10,
+        maxRadius: 70,
+        color: "#38bdf8",
+        alpha: 1.0,
+        speed: 250,
+        lineWidth: 3,
+      });
+      this.floatingTexts.push(
+        createFloatingText("SHIELD DEFLECT!", this.player.state.x, this.player.state.y - 30, "#38bdf8", 16)
+      );
+      return false;
+    } else if (hitResult === true) {
+      // Life lost!
+      soundManager.playPlayerHit();
+      this.shakeIntensity = Math.max(this.shakeIntensity, 18);
+      this.callbacks.onLivesChange?.(this.player.state.lives);
+
+      // Player explosion sparks
+      this.particles.push(
+        ...createExplosionParticles(this.player.state.x, this.player.state.y, 24, "#ff007f", "#ffffff")
+      );
+
+      this.floatingTexts.push(
+        createFloatingText(customLabel || "-1 LIFE!", this.player.state.x, this.player.state.y - 30, "#ff007f", 20)
+      );
+
+      if (this.player.state.lives <= 0) {
+        this.handleGameOver();
+      }
+      return true;
+    }
+
+    return false;
+  }
+
+  private detonateExplosiveMeteor(m: MeteorEntity) {
+    if (m.hasExploded) return;
+    m.hasExploded = true;
+
+    const blastRadius = m.explosionRadius || 115;
+    soundManager.playExplosiveDetonation();
+    this.shakeIntensity = Math.max(this.shakeIntensity, 16);
+    this.flashIntensity = 0.35;
+
+    // Detonation expanding shockwave ring
+    this.shockwaves.push({
+      x: m.x,
+      y: m.y,
+      radius: 12,
+      maxRadius: blastRadius,
+      color: "#ef4444",
+      alpha: 1.0,
+      speed: 380,
+      lineWidth: 4,
+    });
+
+    // Detonation fire & debris particles
+    this.particles.push(
+      ...createExplosionParticles(m.x, m.y, 32, "#ef4444", "#fef08a")
+    );
+
+    // Apply explosion damage to player if within blast radius at detonation instant
+    const distToPlayer = Math.hypot(m.x - this.player.state.x, m.y - this.player.state.y);
+    if (distToPlayer <= blastRadius + this.player.state.radius * 0.8) {
+      this.applyPlayerDamage(m.x, m.y, "BLAST IMPACT!");
+    }
+
+    // Safely apply damage to nearby meteors within blast radius
+    const chainVictims: MeteorEntity[] = [];
+    for (const other of this.meteors) {
+      if (other.id !== m.id && !other.hasExploded) {
+        const d = Math.hypot(other.x - m.x, other.y - m.y);
+        if (d <= blastRadius + other.radius) {
+          other.hp -= 3;
+          other.hitFlashTimer = 0.15;
+          this.particles.push(...createLaserImpactParticles(other.x, other.y, "#ef4444"));
+          if (other.hp <= 0) {
+            chainVictims.push(other);
+          }
+        }
+      }
+    }
+
+    // Destroy any meteors defeated by the explosion chain reaction
+    for (const victim of chainVictims) {
+      if (this.meteors.some((active) => active.id === victim.id)) {
+        this.destroyMeteor(victim);
+      }
     }
   }
 
   private destroyMeteor(meteor: MeteorEntity) {
+    if (!this.meteors.some((m) => m.id === meteor.id)) return;
     this.meteors = this.meteors.filter((m) => m.id !== meteor.id);
 
-    soundManager.playExplosion(meteor.type === "large" ? "large" : meteor.type === "medium" ? "medium" : "small");
-    this.particles.push(
-      ...createExplosionParticles(meteor.x, meteor.y, meteor.type === "large" ? 30 : 16, meteor.color, "#ffffff")
-    );
-
-    const gained = this.scoreSystem.addMeteorScore(meteor.scoreValue);
-    this.callbacks.onScoreChange?.(this.scoreSystem.score);
-
-    this.floatingTexts.push(
-      createFloatingText(`+${gained}`, meteor.x, meteor.y, meteor.color, 16)
-    );
-
-    if (meteor.type === "large") this.shakeIntensity = Math.max(this.shakeIntensity, 10);
-    else if (meteor.type === "medium") this.shakeIntensity = Math.max(this.shakeIntensity, 6);
-
-    const fragments = splitMeteor(meteor);
-    if (fragments.length > 0) {
-      this.meteors.push(...fragments);
+    // 1. If explosive meteor, detonate it
+    if (meteor.type === "explosive" && !meteor.hasExploded) {
+      this.detonateExplosiveMeteor(meteor);
     }
 
-    if (Math.random() < POWER_UP_DROP_RATE) {
+    // 2. Play variant-specific audio and visual destruction effects
+    if (meteor.type === "heavy") {
+      soundManager.playExplosion("large");
+      this.shakeIntensity = Math.max(this.shakeIntensity, 12);
+      this.particles.push(
+        ...createExplosionParticles(meteor.x, meteor.y, 32, meteor.color, "#ffffff")
+      );
+    } else if (meteor.type === "speed") {
+      soundManager.playExplosion("small");
+      this.shakeIntensity = Math.max(this.shakeIntensity, 4);
+      this.particles.push(
+        ...createExplosionParticles(meteor.x, meteor.y, 16, meteor.color, "#ffffff")
+      );
+    } else if (meteor.type === "splitting") {
+      soundManager.playMeteorSplit();
+      this.shakeIntensity = Math.max(this.shakeIntensity, 6);
+      this.particles.push(
+        ...createExplosionParticles(meteor.x, meteor.y, 22, "#10b981", "#6ee7b7")
+      );
+    } else if (meteor.type === "explosive") {
+      // Sound and particles handled in detonateExplosiveMeteor
+    } else {
+      soundManager.playExplosion(meteor.type === "large" ? "large" : meteor.type === "medium" ? "medium" : "small");
+      this.particles.push(
+        ...createExplosionParticles(meteor.x, meteor.y, meteor.type === "large" ? 30 : 16, meteor.color, "#ffffff")
+      );
+    }
+
+    // 3. Award score with combo streak multiplier
+    if (!meteor.hasAwardedScore) {
+      meteor.hasAwardedScore = true;
+      const gained = this.scoreSystem.addMeteorScore(meteor.scoreValue, this.difficultySystem.wave, true);
+      this.callbacks.onScoreChange?.(this.scoreSystem.score);
+      this.callbacks.onComboChange?.(this.scoreSystem.getComboState());
+
+      const comboLabel = this.scoreSystem.getComboTierLabel();
+      const scoreLabel = comboLabel ? `+${gained} ${comboLabel}!` : `+${gained}`;
+      this.floatingTexts.push(
+        createFloatingText(scoreLabel, meteor.x, meteor.y, meteor.color, 16)
+      );
+    }
+
+    // 4. Splitting meteor fragment generation (capped to prevent runaway entity count)
+    if (meteor.type === "splitting" || meteor.type === "large" || meteor.type === "medium") {
+      const fragments = splitMeteor(meteor);
+      if (fragments.length > 0) {
+        const maxAllowed = this.difficultySystem.getMaxMeteors() + 6;
+        const availableSlots = Math.max(0, maxAllowed - this.meteors.length);
+        const fragmentsToAdd = fragments.slice(0, availableSlots);
+        this.meteors.push(...fragmentsToAdd);
+      }
+    }
+
+    // Rebalanced power-up drops (scaled slightly with wave to maintain challenge)
+    const waveDropRate = Math.max(0.15, POWER_UP_DROP_RATE - (this.difficultySystem.wave - 1) * 0.015);
+    if (Math.random() < waveDropRate) {
       const types: PowerUpType[] = [
         "rapid_fire",
         "spread_shot",
@@ -595,15 +779,22 @@ export class GameEngine {
     switch (p.type) {
       case "rapid_fire":
       case "spread_shot":
-        this.activePowerUps.set(p.type, config.duration);
+      case "score_multiplier": {
+        const existing = this.activePowerUps.get(p.type) || 0;
+        const refreshed = Math.min(config.duration * 1.5, existing + config.duration);
+        this.activePowerUps.set(p.type, refreshed);
         this.notifyPowerUpsChange();
         break;
+      }
 
-      case "energy_shield":
+      case "energy_shield": {
         this.player.activateShield(config.duration);
-        this.activePowerUps.set("energy_shield", config.duration);
+        const existing = this.activePowerUps.get("energy_shield") || 0;
+        const refreshed = Math.min(config.duration * 1.5, existing + config.duration);
+        this.activePowerUps.set("energy_shield", refreshed);
         this.notifyPowerUpsChange();
         break;
+      }
 
       case "repair_core":
         const restored = this.player.restoreLife();
@@ -632,6 +823,7 @@ export class GameEngine {
   private triggerNovaBurst() {
     soundManager.playNovaBurst();
     this.shakeIntensity = 22;
+    this.flashIntensity = 0.45;
 
     this.shockwaves.push({
       x: this.player.state.x,
@@ -672,6 +864,7 @@ export class GameEngine {
       powerUpsCollected: this.scoreSystem.powerUpsCollected,
       accuracyShotsFired: this.scoreSystem.shotsFired,
       accuracyShotsHit: this.scoreSystem.shotsHit,
+      maxCombo: this.scoreSystem.maxCombo,
     };
 
     this.callbacks.onGameOver?.(stats);
@@ -704,6 +897,10 @@ export class GameEngine {
       });
     }
     return list;
+  }
+
+  public getComboState(): ComboState {
+    return this.scoreSystem.getComboState();
   }
 
   public render() {
@@ -825,6 +1022,14 @@ export class GameEngine {
       this.ctx.arc(mx, my, 2, 0, Math.PI * 2);
       this.ctx.fill();
 
+      this.ctx.restore();
+    }
+
+    // 11. Detonation / Nova Screen Flash
+    if (this.flashIntensity > 0) {
+      this.ctx.save();
+      this.ctx.fillStyle = `rgba(255, 235, 215, ${this.flashIntensity})`;
+      this.ctx.fillRect(0, 0, this.width, this.height);
       this.ctx.restore();
     }
 

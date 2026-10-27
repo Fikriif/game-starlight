@@ -71,7 +71,7 @@ const INITIAL_PILOTS: StoredGameRun[] = [
   },
 ];
 
-let inMemoryRuns: StoredGameRun[] = [...INITIAL_PILOTS];
+const inMemoryRuns: StoredGameRun[] = [...INITIAL_PILOTS];
 
 export function addLocalRun(run: StoredGameRun): StoredGameRun {
   inMemoryRuns.unshift(run);

@@ -146,7 +146,17 @@ export default function HowToPlayPage() {
                 <span>Wave Progression</span>
               </div>
               <p className="text-xs text-slate-400 leading-relaxed">
-                Waves advance every 25 seconds. Later waves introduce higher hazard density, faster meteors, and erratic pulsars.
+                Waves advance every 30 seconds across 5 combat phases: Survival Training, Increasing Pressure, Dangerous Skies, Meteor Storm, and Endless Survival.
+              </p>
+            </div>
+
+            <div className="glass-card p-5 rounded-2xl space-y-2 col-span-1 md:col-span-3">
+              <div className="flex items-center gap-2 text-orange-400 font-bold text-base">
+                <Flame className="w-5 h-5" />
+                <span>Arcade Combo Multiplier System</span>
+              </div>
+              <p className="text-xs text-slate-400 leading-relaxed">
+                Chain meteor destructions within 2.8 seconds to build your combo streak. Multipliers scale from 1.5x (Streak) to 2.0x (Super), 2.5x (Mega), and up to 3.0x (Ultra Combo), massively multiplying your score when targeting high-value hazards!
               </p>
             </div>
           </div>
@@ -154,42 +164,127 @@ export default function HowToPlayPage() {
 
         {/* Section 3: Meteor Classifications */}
         <section className="space-y-4">
-          <h2 className="text-xl sm:text-2xl font-bold text-white flex items-center gap-2.5">
-            <Sparkles className="w-6 h-6 text-rose-400" />
-            3. Cosmic Hazard Classifications
-          </h2>
+          <div className="flex items-center justify-between">
+            <h2 className="text-xl sm:text-2xl font-bold text-white flex items-center gap-2.5">
+              <Sparkles className="w-6 h-6 text-rose-400" />
+              3. Cosmic Hazard Classifications (6 Meteor Variants)
+            </h2>
+            <span className="text-xs font-mono text-slate-400 hidden sm:inline-block">SECTOR 7 TELEMETRY</span>
+          </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            <div className="glass-panel p-4 rounded-xl border border-blue-500/30 space-y-2">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {/* 1. Standard Meteor */}
+            <div className="glass-panel p-4 rounded-xl border border-orange-500/30 space-y-2.5 bg-gradient-to-b from-orange-950/20 to-slate-900/60">
               <div className="flex items-center justify-between">
-                <span className="font-bold text-blue-300 text-sm">Small Meteor</span>
-                <span className="text-[11px] font-mono px-2 py-0.5 rounded bg-blue-500/20 text-blue-300">10 PTS</span>
+                <div className="flex items-center gap-2">
+                  <span className="w-3 h-3 rounded-full bg-orange-500 shadow-[0_0_8px_#f97316]"></span>
+                  <strong className="text-orange-300 text-sm">Standard Meteor</strong>
+                </div>
+                <span className="text-[11px] font-mono px-2 py-0.5 rounded bg-orange-500/20 text-orange-300 font-bold border border-orange-500/30">
+                  20 PTS • 2 HP
+                </span>
               </div>
-              <p className="text-xs text-slate-400">Fast and agile. 1 Hit to destroy. Ideal for quick target clearing.</p>
+              <p className="text-xs text-slate-400 leading-relaxed">
+                Rocky surface with fiery orange-red glow. Moves at moderate, predictable speed. Baseline combat threat.
+              </p>
+              <div className="p-2 rounded-lg bg-orange-950/40 border border-orange-500/20 text-[11px] font-mono text-orange-200/90">
+                <span className="font-bold text-orange-400">Tactics:</span> Predictable straight velocity. Primary target for score building and power-up farming.
+              </div>
             </div>
 
-            <div className="glass-panel p-4 rounded-xl border border-purple-500/30 space-y-2">
+            {/* 2. Speed Meteor */}
+            <div className="glass-panel p-4 rounded-xl border border-cyan-500/30 space-y-2.5 bg-gradient-to-b from-cyan-950/20 to-slate-900/60">
               <div className="flex items-center justify-between">
-                <span className="font-bold text-purple-300 text-sm">Medium Meteor</span>
-                <span className="text-[11px] font-mono px-2 py-0.5 rounded bg-purple-500/20 text-purple-300">25 PTS</span>
+                <div className="flex items-center gap-2">
+                  <span className="w-3 h-3 rounded-full bg-cyan-400 shadow-[0_0_8px_#06b6d4]"></span>
+                  <strong className="text-cyan-300 text-sm">Speed Meteor</strong>
+                </div>
+                <span className="text-[11px] font-mono px-2 py-0.5 rounded bg-cyan-500/20 text-cyan-300 font-bold border border-cyan-500/30">
+                  35 PTS • 1 HP
+                </span>
               </div>
-              <p className="text-xs text-slate-400">Requires 3 Hits. On destruction, splits into 2 small meteor fragments!</p>
+              <p className="text-xs text-slate-400 leading-relaxed">
+                Leaves an electric cyan trail. Telegraphs a converging reticle and forward chevron before supersonic speed bursts!
+              </p>
+              <div className="p-2 rounded-lg bg-cyan-950/40 border border-cyan-500/20 text-[11px] font-mono text-cyan-200/90">
+                <span className="font-bold text-cyan-400">Tactics:</span> Watch the telegraph warning. Lead your directional blaster crosshair ahead of its trajectory.
+              </div>
             </div>
 
-            <div className="glass-panel p-4 rounded-xl border border-rose-500/30 space-y-2">
+            {/* 3. Heavy Titan */}
+            <div className="glass-panel p-4 rounded-xl border border-purple-500/30 space-y-2.5 bg-gradient-to-b from-purple-950/20 to-slate-900/60">
               <div className="flex items-center justify-between">
-                <span className="font-bold text-rose-300 text-sm">Large Titan</span>
-                <span className="text-[11px] font-mono px-2 py-0.5 rounded bg-rose-500/20 text-rose-300">50 PTS</span>
+                <div className="flex items-center gap-2">
+                  <span className="w-3 h-3 rounded-full bg-purple-500 shadow-[0_0_8px_#a855f7]"></span>
+                  <strong className="text-purple-300 text-sm">Heavy Titan</strong>
+                </div>
+                <span className="text-[11px] font-mono px-2 py-0.5 rounded bg-purple-500/20 text-purple-300 font-bold border border-purple-500/30">
+                  75 PTS • 6 HP
+                </span>
               </div>
-              <p className="text-xs text-slate-400">Massive durability (6 Hits). Upon obliteration, fractures into 2 medium meteors.</p>
+              <p className="text-xs text-slate-400 leading-relaxed">
+                Massive slow-moving dreadnought. Requires 6 precision hits. Features glowing fracture fissures that widen as health depletes.
+              </p>
+              <div className="p-2 rounded-lg bg-purple-950/40 border border-purple-500/20 text-[11px] font-mono text-purple-200/90">
+                <span className="font-bold text-purple-400">Tactics:</span> Focus directional blaster volleys. Glowing fissures indicate impending structural failure.
+              </div>
             </div>
 
-            <div className="glass-panel p-4 rounded-xl border border-cyan-500/30 space-y-2">
+            {/* 4. Splitting Meteor */}
+            <div className="glass-panel p-4 rounded-xl border border-emerald-500/30 space-y-2.5 bg-gradient-to-b from-emerald-950/20 to-slate-900/60">
               <div className="flex items-center justify-between">
-                <span className="font-bold text-cyan-300 text-sm">Cosmic Pulsar</span>
-                <span className="text-[11px] font-mono px-2 py-0.5 rounded bg-cyan-500/20 text-cyan-300">40 PTS</span>
+                <div className="flex items-center gap-2">
+                  <span className="w-3 h-3 rounded-full bg-emerald-400 shadow-[0_0_8px_#10b981]"></span>
+                  <strong className="text-emerald-300 text-sm">Splitting Meteor</strong>
+                </div>
+                <span className="text-[11px] font-mono px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 font-bold border border-emerald-500/30">
+                  40 PTS • 3 HP
+                </span>
               </div>
-              <p className="text-xs text-slate-400">High speed with sinusoidal wobble. Dangerous trajectory across the arena.</p>
+              <p className="text-xs text-slate-400 leading-relaxed">
+                Emerald crystalline cluster. Upon destruction, shatters into 2 independent shard fragments (15 PTS each) with divergent trajectories!
+              </p>
+              <div className="p-2 rounded-lg bg-emerald-950/40 border border-emerald-500/20 text-[11px] font-mono text-emerald-200/90">
+                <span className="font-bold text-emerald-400">Tactics:</span> Maintain evasive space before shattering to quickly pick off the resulting crystal shards.
+              </div>
+            </div>
+
+            {/* 5. Explosive Meteor */}
+            <div className="glass-panel p-4 rounded-xl border border-rose-500/30 space-y-2.5 bg-gradient-to-b from-rose-950/20 to-slate-900/60">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <span className="w-3 h-3 rounded-full bg-rose-500 shadow-[0_0_8px_#ef4444] animate-pulse"></span>
+                  <strong className="text-rose-300 text-sm">Explosive Meteor</strong>
+                </div>
+                <span className="text-[11px] font-mono px-2 py-0.5 rounded bg-rose-500/20 text-rose-300 font-bold border border-rose-500/30">
+                  50 PTS • 2 HP
+                </span>
+              </div>
+              <p className="text-xs text-slate-400 leading-relaxed">
+                Volatile magma core with a pulsing detonation timer ring. Triggers a 115px blast shockwave damaging hulls and igniting chain reactions.
+              </p>
+              <div className="p-2 rounded-lg bg-rose-950/40 border border-rose-500/20 text-[11px] font-mono text-rose-200/90">
+                <span className="font-bold text-rose-400">Tactics:</span> Stand clear of the blast perimeter. Chain explosions damage other meteors safely!
+              </div>
+            </div>
+
+            {/* 6. Drifting Meteor */}
+            <div className="glass-panel p-4 rounded-xl border border-pink-500/30 space-y-2.5 bg-gradient-to-b from-pink-950/20 to-slate-900/60">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <span className="w-3 h-3 rounded-full bg-pink-400 shadow-[0_0_8px_#ec4899]"></span>
+                  <strong className="text-pink-300 text-sm">Drifting Meteor</strong>
+                </div>
+                <span className="text-[11px] font-mono px-2 py-0.5 rounded bg-pink-500/20 text-pink-300 font-bold border border-pink-500/30">
+                  35 PTS • 2 HP
+                </span>
+              </div>
+              <p className="text-xs text-slate-400 leading-relaxed">
+                Leaves a magenta particle trail while executing smooth, curved sinusoidal steering maneuvers with dynamic nebula swirls.
+              </p>
+              <div className="p-2 rounded-lg bg-pink-950/40 border border-pink-500/20 text-[11px] font-mono text-pink-200/90">
+                <span className="font-bold text-pink-400">Tactics:</span> Account for the lateral wave steering rather than firing strictly along straight lines.
+              </div>
             </div>
           </div>
         </section>

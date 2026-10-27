@@ -360,6 +360,202 @@ class SoundManager {
       osc.stop(now + 0.04);
     } catch {}
   }
+
+  /**
+   * Speed burst telegraph warning (electronic chirp)
+   */
+  public playSpeedWarning() {
+    if (!this.ensureAudioContext() || !this.ctx || !this.masterGain) return;
+
+    try {
+      const osc = this.ctx.createOscillator();
+      const gain = this.ctx.createGain();
+      const now = this.ctx.currentTime;
+      const duration = 0.1;
+
+      osc.type = "sine";
+      osc.frequency.setValueAtTime(600, now);
+      osc.frequency.exponentialRampToValueAtTime(1200, now + duration);
+
+      gain.gain.setValueAtTime(0.16, now);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + duration);
+
+      osc.connect(gain);
+      gain.connect(this.masterGain);
+
+      osc.start(now);
+      osc.stop(now + duration);
+    } catch {}
+  }
+
+  /**
+   * Speed burst surge acceleration (turbo jet whoosh)
+   */
+  public playSpeedBurst() {
+    if (!this.ensureAudioContext() || !this.ctx || !this.masterGain) return;
+
+    try {
+      const now = this.ctx.currentTime;
+      const duration = 0.22;
+
+      const osc = this.ctx.createOscillator();
+      const gain = this.ctx.createGain();
+      osc.type = "sawtooth";
+      osc.frequency.setValueAtTime(320, now);
+      osc.frequency.exponentialRampToValueAtTime(850, now + duration);
+
+      gain.gain.setValueAtTime(0.2, now);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + duration);
+
+      osc.connect(gain);
+      gain.connect(this.masterGain);
+
+      osc.start(now);
+      osc.stop(now + duration);
+    } catch {}
+  }
+
+  /**
+   * Heavy meteor projectile impact (deep resonant metallic thud)
+   */
+  public playHeavyDamage() {
+    if (!this.ensureAudioContext() || !this.ctx || !this.masterGain) return;
+
+    try {
+      const now = this.ctx.currentTime;
+      const duration = 0.18;
+
+      const osc = this.ctx.createOscillator();
+      const gain = this.ctx.createGain();
+      osc.type = "triangle";
+      osc.frequency.setValueAtTime(140, now);
+      osc.frequency.exponentialRampToValueAtTime(35, now + duration);
+
+      gain.gain.setValueAtTime(0.3, now);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + duration);
+
+      osc.connect(gain);
+      gain.connect(this.masterGain);
+
+      osc.start(now);
+      osc.stop(now + duration);
+    } catch {}
+  }
+
+  /**
+   * Meteor splitting shatter sound (crystalline fracture burst)
+   */
+  public playMeteorSplit() {
+    if (!this.ensureAudioContext() || !this.ctx || !this.masterGain) return;
+
+    try {
+      const now = this.ctx.currentTime;
+      const duration = 0.25;
+
+      const osc1 = this.ctx.createOscillator();
+      const osc2 = this.ctx.createOscillator();
+      const gain = this.ctx.createGain();
+
+      osc1.type = "triangle";
+      osc1.frequency.setValueAtTime(1400, now);
+      osc1.frequency.exponentialRampToValueAtTime(400, now + duration);
+
+      osc2.type = "square";
+      osc2.frequency.setValueAtTime(2100, now);
+      osc2.frequency.exponentialRampToValueAtTime(700, now + duration);
+
+      gain.gain.setValueAtTime(0.24, now);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + duration);
+
+      osc1.connect(gain);
+      osc2.connect(gain);
+      gain.connect(this.masterGain);
+
+      osc1.start(now);
+      osc2.start(now);
+      osc1.stop(now + duration);
+      osc2.stop(now + duration);
+    } catch {}
+  }
+
+  /**
+   * Detonation countdown warning beep (ticking hazard alert)
+   */
+  public playDetonationWarning() {
+    if (!this.ensureAudioContext() || !this.ctx || !this.masterGain) return;
+
+    try {
+      const now = this.ctx.currentTime;
+      const duration = 0.06;
+
+      const osc = this.ctx.createOscillator();
+      const gain = this.ctx.createGain();
+      osc.type = "sine";
+      osc.frequency.setValueAtTime(950, now);
+
+      gain.gain.setValueAtTime(0.18, now);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + duration);
+
+      osc.connect(gain);
+      gain.connect(this.masterGain);
+
+      osc.start(now);
+      osc.stop(now + duration);
+    } catch {}
+  }
+
+  /**
+   * Explosive meteor detonation (powerful shockwave detonation)
+   */
+  public playExplosiveDetonation() {
+    if (!this.ensureAudioContext() || !this.ctx || !this.masterGain) return;
+
+    try {
+      const now = this.ctx.currentTime;
+      const duration = 0.55;
+
+      // Deep sub boom
+      const sub = this.ctx.createOscillator();
+      const subGain = this.ctx.createGain();
+      sub.type = "sine";
+      sub.frequency.setValueAtTime(120, now);
+      sub.frequency.exponentialRampToValueAtTime(24, now + duration);
+
+      subGain.gain.setValueAtTime(0.55, now);
+      subGain.gain.exponentialRampToValueAtTime(0.001, now + duration);
+
+      sub.connect(subGain);
+      subGain.connect(this.masterGain);
+      sub.start(now);
+      sub.stop(now + duration);
+
+      // Filtered explosion roar
+      const bufferSize = Math.floor(this.ctx.sampleRate * duration);
+      const buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
+      const data = buffer.getChannelData(0);
+      for (let i = 0; i < bufferSize; i++) {
+        data[i] = (Math.random() * 2 - 1) * Math.exp(-2.5 * (i / bufferSize));
+      }
+
+      const noise = this.ctx.createBufferSource();
+      noise.buffer = buffer;
+
+      const filter = this.ctx.createBiquadFilter();
+      filter.type = "lowpass";
+      filter.frequency.setValueAtTime(380, now);
+      filter.frequency.exponentialRampToValueAtTime(50, now + duration);
+
+      const noiseGain = this.ctx.createGain();
+      noiseGain.gain.setValueAtTime(0.38, now);
+      noiseGain.gain.exponentialRampToValueAtTime(0.001, now + duration);
+
+      noise.connect(filter);
+      filter.connect(noiseGain);
+      noiseGain.connect(this.masterGain);
+
+      noise.start(now);
+    } catch {}
+  }
 }
 
 export const soundManager = new SoundManager();

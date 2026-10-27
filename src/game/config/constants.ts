@@ -19,8 +19,105 @@ export const PLAYER_CONFIG = {
 };
 
 export const METEOR_CONFIGS = {
+  standard: {
+    type: "standard" as const,
+    name: "Standard",
+    radius: 22,
+    hp: 2,
+    speedMin: 110,
+    speedMax: 165,
+    scoreValue: 20,
+    color: "#f97316",
+    coreColor: "#7c2d12",
+    glowColor: "rgba(249, 115, 22, 0.75)",
+  },
+  speed: {
+    type: "speed" as const,
+    name: "Speed",
+    radius: 17,
+    hp: 1,
+    speedMin: 220,
+    speedMax: 300,
+    scoreValue: 35,
+    color: "#06b6d4",
+    coreColor: "#083344",
+    glowColor: "rgba(6, 182, 212, 0.9)",
+    burstInterval: 3.2,
+    burstChargeTime: 0.5,
+    burstDuration: 0.8,
+    burstSpeedMultiplier: 1.65,
+  },
+  heavy: {
+    type: "heavy" as const,
+    name: "Heavy",
+    radius: 46,
+    hp: 6,
+    speedMin: 48,
+    speedMax: 75,
+    scoreValue: 75,
+    color: "#a855f7",
+    coreColor: "#3b0764",
+    glowColor: "rgba(168, 85, 247, 0.8)",
+  },
+  splitting: {
+    type: "splitting" as const,
+    name: "Splitting",
+    radius: 36,
+    hp: 3,
+    speedMin: 80,
+    speedMax: 125,
+    scoreValue: 40,
+    color: "#10b981",
+    coreColor: "#064e3b",
+    glowColor: "rgba(16, 185, 129, 0.8)",
+    fragmentsCount: 2,
+  },
+  splitting_fragment: {
+    type: "splitting_fragment" as const,
+    name: "Fragment",
+    radius: 18,
+    hp: 1,
+    speedMin: 140,
+    speedMax: 200,
+    scoreValue: 15,
+    color: "#34d399",
+    coreColor: "#065f46",
+    glowColor: "rgba(52, 211, 153, 0.7)",
+  },
+  explosive: {
+    type: "explosive" as const,
+    name: "Explosive",
+    radius: 26,
+    hp: 2,
+    speedMin: 85,
+    speedMax: 135,
+    scoreValue: 50,
+    color: "#ef4444",
+    coreColor: "#7f1d1d",
+    glowColor: "rgba(239, 68, 68, 0.9)",
+    fuseDuration: 6.5,
+    explosionRadius: 115,
+    explosionDamage: 1,
+    chainMeteorDamage: 3,
+  },
+  drifting: {
+    type: "drifting" as const,
+    name: "Drifting",
+    radius: 24,
+    hp: 2,
+    speedMin: 100,
+    speedMax: 145,
+    scoreValue: 35,
+    color: "#ec4899",
+    coreColor: "#831843",
+    glowColor: "rgba(236, 72, 153, 0.8)",
+    driftFrequency: 2.2,
+    driftAmplitude: 85,
+  },
+  // Legacy backward-compatibility entries
   small: {
     type: "small" as const,
+    name: "Small",
     radius: 16,
     hp: 1,
     speedMin: 140,
@@ -32,6 +129,7 @@ export const METEOR_CONFIGS = {
   },
   medium: {
     type: "medium" as const,
+    name: "Medium",
     radius: 28,
     hp: 3,
     speedMin: 90,
@@ -43,6 +141,7 @@ export const METEOR_CONFIGS = {
   },
   large: {
     type: "large" as const,
+    name: "Large",
     radius: 46,
     hp: 6,
     speedMin: 55,
@@ -54,6 +153,7 @@ export const METEOR_CONFIGS = {
   },
   pulsar: {
     type: "pulsar" as const,
+    name: "Pulsar",
     radius: 20,
     hp: 2,
     speedMin: 200,
@@ -122,13 +222,33 @@ export const POWER_UP_CONFIGS: Record<PowerUpType, PowerUpConfig> = {
   },
 };
 
-export const POWER_UP_DROP_RATE = 0.22; // 22% chance on meteor destruction
+export const POWER_UP_DROP_RATE = 0.22; // 22% starting chance on meteor destruction
 
 export const DIFFICULTY_CONFIG = {
-  INITIAL_SPAWN_INTERVAL: 1.6, // seconds between meteor spawns
+  INITIAL_SPAWN_INTERVAL: 1.55, // seconds between meteor spawns in Wave 1
   MIN_SPAWN_INTERVAL: 0.45,
-  SPAWN_DECAY_PER_WAVE: 0.12,
-  WAVE_DURATION_SECONDS: 25,
+  SPAWN_DECAY_PER_WAVE: 0.18,
+  WAVE_DURATION_SECONDS: 30, // 30 seconds per wave
   PASSIVE_SCORE_INTERVAL: 10, // seconds
   PASSIVE_SCORE_POINTS: 5,
+  MAX_METEORS_LIMIT: 24, // maximum concurrent active hazards
+};
+
+export const WAVE_TITLES: Record<number, string> = {
+  1: "Survival Training",
+  2: "Increasing Pressure",
+  3: "Dangerous Skies",
+  4: "Meteor Storm",
+  5: "Endless Survival",
+};
+
+export const COMBO_CONFIG = {
+  WINDOW_DURATION: 2.8, // seconds before combo streak decays
+  TIERS: [
+    { minCombo: 10, multiplier: 3.0, label: "ULTRA COMBO" },
+    { minCombo: 7, multiplier: 2.5, label: "MEGA COMBO" },
+    { minCombo: 4, multiplier: 2.0, label: "SUPER COMBO" },
+    { minCombo: 2, multiplier: 1.5, label: "COMBO" },
+    { minCombo: 1, multiplier: 1.0, label: "" },
+  ],
 };
