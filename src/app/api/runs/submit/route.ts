@@ -5,6 +5,7 @@ import {
 } from "@/lib/validation/scoreValidator";
 import { supabase, isSupabaseConfigured } from "@/lib/supabase/client";
 import { addLocalRun } from "@/lib/storage/localScoreStore";
+import { Database } from "@/lib/supabase/types";
 
 export async function POST(req: Request) {
   try {
@@ -36,19 +37,21 @@ export async function POST(req: Request) {
 
     // 2. Persist to Database if Supabase is configured
     if (isSupabaseConfigured && supabase) {
+      const runInsertData: Database["public"]["Tables"]["game_runs"]["Insert"] = {
+        id: runId,
+        user_id: userId || null,
+        guest_identifier: guestId || null,
+        display_name: displayName.trim(),
+        score,
+        survival_seconds: Math.floor(survivalSeconds),
+        meteors_destroyed: meteorsDestroyed,
+        highest_wave: highestWave,
+        verification_status: validation.verificationStatus,
+      };
+
       const { data, error } = await supabase
         .from("game_runs")
-        .insert({
-          id: runId,
-          user_id: userId || null,
-          guest_identifier: guestId || null,
-          display_name: displayName.trim(),
-          score,
-          survival_seconds: Math.floor(survivalSeconds),
-          meteors_destroyed: meteorsDestroyed,
-          highest_wave: highestWave,
-          verification_status: validation.verificationStatus,
-        } as any)
+        .insert([runInsertData])
         .select()
         .single();
 

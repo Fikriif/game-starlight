@@ -108,9 +108,9 @@ export const METEOR_CONFIGS = {
     speedMin: 100,
     speedMax: 145,
     scoreValue: 35,
-    color: "#ec4899",
-    coreColor: "#831843",
-    glowColor: "rgba(236, 72, 153, 0.8)",
+    color: "#818cf8",
+    coreColor: "#312e81",
+    glowColor: "rgba(129, 140, 248, 0.8)",
     driftFrequency: 2.2,
     driftAmplitude: 85,
   },
@@ -215,10 +215,10 @@ export const POWER_UP_CONFIGS: Record<PowerUpType, PowerUpConfig> = {
     type: "nova_burst",
     name: "Nova Burst",
     duration: 0, // instant
-    color: "#ff007f",
-    glowColor: "rgba(255, 0, 127, 0.9)",
+    color: "#f59e0b",
+    glowColor: "rgba(245, 158, 11, 0.9)",
     description: "Cosmic shockwave destroys nearby meteors",
-    icon: "💥",
+    icon: "nova",
   },
 };
 

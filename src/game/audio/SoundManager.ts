@@ -52,6 +52,7 @@ class SoundManager {
     this.isMuted = !this.isMuted;
     if (typeof window !== "undefined") {
       localStorage.setItem("starfall_muted", String(this.isMuted));
+      window.dispatchEvent(new Event("starfall_sound_changed"));
     }
     if (this.masterGain && this.ctx) {
       this.masterGain.gain.setValueAtTime(this.isMuted ? 0 : this.masterVolume, this.ctx.currentTime);

@@ -16,16 +16,16 @@ export default function CosmicBackground() {
     let height = (canvas.height = window.innerHeight);
 
     const stars: { x: number; y: number; size: number; color: string; speed: number; alpha: number }[] = [];
-    const colors = ["#ffffff", "#67e8f9", "#c084fc", "#93c5fd"];
 
-    for (let i = 0; i < 110; i++) {
+    for (let i = 0; i < 90; i++) {
+      const isDistant = Math.random() < 0.65;
       stars.push({
         x: Math.random() * width,
         y: Math.random() * height,
-        size: 0.8 + Math.random() * 1.5,
-        color: colors[Math.floor(Math.random() * colors.length)],
-        speed: 0.2 + Math.random() * 0.6,
-        alpha: 0.3 + Math.random() * 0.7,
+        size: isDistant ? 0.6 + Math.random() * 0.6 : 1.2 + Math.random() * 1.0,
+        color: isDistant ? "#94a3b8" : Math.random() > 0.4 ? "#ffffff" : "#7dd3fc",
+        speed: isDistant ? 0.12 + Math.random() * 0.25 : 0.4 + Math.random() * 0.5,
+        alpha: isDistant ? 0.25 + Math.random() * 0.4 : 0.6 + Math.random() * 0.4,
       });
     }
 
@@ -36,14 +36,14 @@ export default function CosmicBackground() {
     window.addEventListener("resize", handleResize);
 
     const render = () => {
-      ctx.fillStyle = "#050713";
+      ctx.fillStyle = "#02040a";
       ctx.fillRect(0, 0, width, height);
 
-      // Radial nebulae
-      const grad = ctx.createRadialGradient(width * 0.5, height * 0.3, 100, width * 0.5, height * 0.3, width * 0.7);
-      grad.addColorStop(0, "rgba(22, 14, 55, 0.4)");
-      grad.addColorStop(0.6, "rgba(6, 21, 46, 0.25)");
-      grad.addColorStop(1, "rgba(5, 7, 19, 0)");
+      // Radial nebulae (subtle dark navy)
+      const grad = ctx.createRadialGradient(width * 0.5, height * 0.35, 100, width * 0.5, height * 0.35, width * 0.7);
+      grad.addColorStop(0, "rgba(8, 16, 38, 0.35)");
+      grad.addColorStop(0.6, "rgba(4, 9, 22, 0.15)");
+      grad.addColorStop(1, "rgba(2, 4, 10, 0)");
       ctx.fillStyle = grad;
       ctx.fillRect(0, 0, width, height);
 
@@ -55,7 +55,7 @@ export default function CosmicBackground() {
           s.x = Math.random() * width;
         }
 
-        ctx.globalAlpha = s.alpha * (0.6 + Math.sin(Date.now() * 0.002 + s.x) * 0.4);
+        ctx.globalAlpha = s.alpha * (0.7 + Math.sin(Date.now() * 0.0018 + s.x) * 0.3);
         ctx.fillStyle = s.color;
         ctx.beginPath();
         ctx.arc(s.x, s.y, s.size, 0, Math.PI * 2);

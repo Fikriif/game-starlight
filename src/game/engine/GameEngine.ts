@@ -147,16 +147,21 @@ export class GameEngine {
 
   private initStars() {
     this.stars = [];
-    const starCount = 90;
-    const colors = ["#ffffff", "#67e8f9", "#c084fc", "#93c5fd"];
+    const starCount = 85;
 
     for (let i = 0; i < starCount; i++) {
+      // 65% distant faint stars, 35% nearer brighter stars
+      const isDistant = Math.random() < 0.65;
+      const size = isDistant ? 0.6 + Math.random() * 0.7 : 1.2 + Math.random() * 1.0;
+      const speed = isDistant ? 5 + Math.random() * 10 : 16 + Math.random() * 22;
+      const color = isDistant ? "#94a3b8" : Math.random() > 0.4 ? "#ffffff" : "#7dd3fc";
+
       this.stars.push({
         x: Math.random() * this.width,
         y: Math.random() * this.height,
-        size: 0.8 + Math.random() * 1.8,
-        color: colors[Math.floor(Math.random() * colors.length)],
-        speed: 8 + Math.random() * 24,
+        size,
+        color,
+        speed,
         twinklePhase: Math.random() * Math.PI * 2,
       });
     }
@@ -615,11 +620,11 @@ export class GameEngine {
 
       // Player explosion sparks
       this.particles.push(
-        ...createExplosionParticles(this.player.state.x, this.player.state.y, 24, "#ff007f", "#ffffff")
+        ...createExplosionParticles(this.player.state.x, this.player.state.y, 24, "#ef4444", "#f59e0b")
       );
 
       this.floatingTexts.push(
-        createFloatingText(customLabel || "-1 LIFE!", this.player.state.x, this.player.state.y - 30, "#ff007f", 20)
+        createFloatingText(customLabel || "HULL BREACH!", this.player.state.x, this.player.state.y - 30, "#ef4444", 18)
       );
 
       if (this.player.state.lives <= 0) {
@@ -830,7 +835,7 @@ export class GameEngine {
       y: this.player.state.y,
       radius: 10,
       maxRadius: Math.max(this.width, this.height),
-      color: "#ff007f",
+      color: "#f59e0b",
       alpha: 1.0,
       speed: 1200,
       lineWidth: 5,
@@ -842,7 +847,7 @@ export class GameEngine {
     }
 
     this.floatingTexts.push(
-      createFloatingText("NOVA BURST!", this.width / 2, this.height * 0.45, "#ff007f", 30)
+      createFloatingText("NOVA BURST!", this.width / 2, this.height * 0.45, "#f59e0b", 28)
     );
   }
 
@@ -914,27 +919,27 @@ export class GameEngine {
     }
 
     // 1. Deep Space Cosmic Background
-    this.ctx.fillStyle = "#050713";
+    this.ctx.fillStyle = "#02040a";
     this.ctx.fillRect(0, 0, this.width, this.height);
 
-    // Subtle Radial Nebula Glow
+    // Subtle Radial Nebula Glow (Restrained dark blue)
     const nebulaGrad = this.ctx.createRadialGradient(
       this.width * 0.5,
-      this.height * 0.4,
-      50,
+      this.height * 0.45,
+      60,
       this.width * 0.5,
-      this.height * 0.4,
-      this.width * 0.8
+      this.height * 0.45,
+      this.width * 0.75
     );
-    nebulaGrad.addColorStop(0, "rgba(24, 18, 64, 0.45)");
-    nebulaGrad.addColorStop(0.5, "rgba(8, 25, 54, 0.25)");
-    nebulaGrad.addColorStop(1, "rgba(3, 5, 12, 0)");
+    nebulaGrad.addColorStop(0, "rgba(8, 16, 38, 0.35)");
+    nebulaGrad.addColorStop(0.6, "rgba(4, 9, 22, 0.15)");
+    nebulaGrad.addColorStop(1, "rgba(2, 4, 10, 0)");
     this.ctx.fillStyle = nebulaGrad;
     this.ctx.fillRect(0, 0, this.width, this.height);
 
     // 2. Parallax Starfield
     for (const star of this.stars) {
-      const twinkle = Math.sin(star.twinklePhase) * 0.3 + 0.7;
+      const twinkle = Math.sin(star.twinklePhase) * 0.25 + 0.75;
       this.ctx.fillStyle = star.color;
       this.ctx.globalAlpha = twinkle;
       this.ctx.beginPath();
@@ -942,6 +947,32 @@ export class GameEngine {
       this.ctx.fill();
     }
     this.ctx.globalAlpha = 1.0;
+
+    // Technical Arena Corner Brackets
+    this.ctx.save();
+    this.ctx.strokeStyle = "rgba(56, 189, 248, 0.2)";
+    this.ctx.lineWidth = 1.2;
+    const bLen = 14;
+    const bPad = 8;
+    // Top-Left
+    this.ctx.beginPath();
+    this.ctx.moveTo(bPad, bPad + bLen);
+    this.ctx.lineTo(bPad, bPad);
+    this.ctx.lineTo(bPad + bLen, bPad);
+    // Top-Right
+    this.ctx.moveTo(this.width - bPad - bLen, bPad);
+    this.ctx.lineTo(this.width - bPad, bPad);
+    this.ctx.lineTo(this.width - bPad, bPad + bLen);
+    // Bottom-Left
+    this.ctx.moveTo(bPad, this.height - bPad - bLen);
+    this.ctx.lineTo(bPad, this.height - bPad);
+    this.ctx.lineTo(bPad + bLen, this.height - bPad);
+    // Bottom-Right
+    this.ctx.moveTo(this.width - bPad - bLen, this.height - bPad);
+    this.ctx.lineTo(this.width - bPad, this.height - bPad);
+    this.ctx.lineTo(this.width - bPad, this.height - bPad - bLen);
+    this.ctx.stroke();
+    this.ctx.restore();
 
     // 3. Shockwave Rings
     for (const sw of this.shockwaves) {

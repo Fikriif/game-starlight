@@ -39,7 +39,7 @@ export default function GameOverModal({
   const [submissionStatus, setSubmissionStatus] = useState<
     "submitting" | "success" | "error"
   >("submitting");
-  const [statusMessage, setStatusMessage] = useState("Verifying and submitting score...");
+  const [statusMessage, setStatusMessage] = useState("Authenticating sortie telemetry...");
   const [isNewRecord] = useState(() => {
     const currentRunId = runId || `run_${Date.now()}`;
     const { isNewRecord: newRecord } = updateProfileAfterRun(
@@ -56,19 +56,19 @@ export default function GameOverModal({
     if (isNewRecord) {
       try {
         confetti({
-          particleCount: 80,
-          spread: 70,
+          particleCount: 70,
+          spread: 60,
           origin: { y: 0.6 },
-          colors: ["#00f0ff", "#a855f7", "#ff007f", "#f59e0b"],
+          colors: ["#00f0ff", "#a855f7", "#f59e0b", "#38bdf8"],
         });
       } catch {}
     }
 
-    // 2. Submit to backend API
+    // Submit to verified backend API
     const submitScore = async () => {
       if (!runToken || !runId) {
         setSubmissionStatus("success");
-        setStatusMessage("Score saved to personal log (Local mode)");
+        setStatusMessage("Score logged to local high scores");
         return;
       }
 
@@ -93,18 +93,18 @@ export default function GameOverModal({
         if (data.success) {
           setSubmissionStatus("success");
           if (data.mode === "supabase") {
-            setStatusMessage("Verified & recorded on Global Leaderboard!");
+            setStatusMessage("Verified & recorded on Global Leaderboard");
           } else {
-            setStatusMessage("Verified & recorded on Arcade Leaderboard!");
+            setStatusMessage("Verified & recorded on Local High Scores");
           }
         } else {
           setSubmissionStatus("error");
-          setStatusMessage(data.error || "Score verification failed");
+          setStatusMessage(data.error || "Telemetry verification rejected");
         }
       } catch (err) {
         console.warn("Submission error:", err);
         setSubmissionStatus("success");
-        setStatusMessage("Saved to offline high scores");
+        setStatusMessage("Logged to local high scores");
       }
     };
 
@@ -123,132 +123,134 @@ export default function GameOverModal({
       : 0;
 
   return (
-    <div className="absolute inset-0 z-30 bg-[#03050c]/85 backdrop-blur-lg flex items-center justify-center p-4 overflow-y-auto">
-      <div className="glass-panel max-w-md w-full p-6 sm:p-8 rounded-3xl border border-rose-500/40 shadow-[0_0_50px_rgba(255,0,127,0.25)] text-center my-auto animate-float">
-        {/* Top Tag & Title */}
-        <span className="px-2.5 py-1 rounded-full text-[11px] font-mono tracking-widest uppercase bg-rose-500/20 text-rose-400 border border-rose-500/30">
-          MISSION TERMINATED
-        </span>
+    <div className="absolute inset-0 z-30 bg-[#02040a]/94 backdrop-blur-md flex items-center justify-center p-4 overflow-y-auto">
+      <div className="hud-panel-strong max-w-md w-full p-5 sm:p-7 border border-red-500/50 shadow-[0_0_60px_rgba(0,0,0,0.95)] text-center my-auto corner-bracket-danger">
+        {/* Status Tag */}
+        <div className="flex items-center justify-center gap-2 mb-2">
+          <span className="px-2.5 py-0.5 text-[10px] font-mono tracking-widest uppercase bg-red-950/70 text-red-400 border border-red-500/40">
+            SORTIE TERMINATED // HULL FAILURE
+          </span>
+        </div>
 
-        <h2 className="text-3xl font-black tracking-wider text-white mt-3 text-glow-magenta">
-          HULL DESTROYED
+        <h2 className="text-2xl sm:text-3xl font-black font-mono tracking-wider text-white text-glow-danger uppercase">
+          MISSION CASUALTY
         </h2>
 
         {/* New Personal Record celebration */}
         {isNewRecord && (
-          <div className="mt-2 inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-gradient-to-r from-amber-500/20 via-purple-500/20 to-cyan-500/20 border border-amber-400/50 text-amber-300 text-xs font-bold shadow-[0_0_15px_rgba(245,158,11,0.3)] animate-pulse">
-            <Sparkles className="w-3.5 h-3.5" />
-            NEW PERSONAL RECORD!
+          <div className="mt-2 inline-flex items-center gap-1.5 px-3 py-1 bg-amber-500/20 border border-amber-400/60 text-amber-300 text-xs font-mono font-bold tracking-wider">
+            <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+            <span>NEW PERSONAL RECORD!</span>
           </div>
         )}
 
-        {/* Final Score Big Callout */}
-        <div className="my-5 p-4 rounded-2xl bg-[#070b1e]/90 border border-cyan-500/30 shadow-inner">
-          <span className="text-xs font-mono tracking-widest text-cyan-400 uppercase">
-            FINAL SCORE
+        {/* Final Score Block */}
+        <div className="my-4 p-4 bg-[#050918] border border-cyan-500/35 relative">
+          <span className="text-[10px] font-mono tracking-widest text-cyan-400 uppercase">
+            AUTHENTICATED SCORE
           </span>
-          <div className="text-4xl sm:text-5xl font-black font-mono text-white text-glow-cyan tracking-tight mt-1">
+          <div className="text-4xl sm:text-5xl font-black font-mono text-white text-glow-cyan tracking-tight mt-0.5">
             {stats.score.toLocaleString()}
           </div>
         </div>
 
-        {/* Mission Telemetry Grid */}
-        <div className="grid grid-cols-2 gap-2.5 mb-5 text-left font-mono">
-          <div className="p-2.5 rounded-xl bg-slate-900/60 border border-slate-800 flex items-center gap-2.5">
-            <Clock className="w-4 h-4 text-blue-400 shrink-0" />
+        {/* Telemetry Breakdown Grid */}
+        <div className="grid grid-cols-2 gap-2 mb-4 text-left font-mono">
+          <div className="p-2.5 bg-[#050a1c] border border-slate-800/90 flex items-center gap-2.5 clip-chamfer-xs">
+            <Clock className="w-4 h-4 text-cyan-400 shrink-0" />
             <div>
-              <div className="text-[10px] text-slate-400">SURVIVAL TIME</div>
-              <div className="text-sm font-bold text-slate-200">{formattedTime}</div>
+              <div className="text-[9px] text-slate-400 tracking-wider">FLIGHT TIME</div>
+              <div className="text-sm font-bold text-slate-100">{formattedTime}</div>
             </div>
           </div>
 
-          <div className="p-2.5 rounded-xl bg-slate-900/60 border border-slate-800 flex items-center gap-2.5">
+          <div className="p-2.5 bg-[#050a1c] border border-slate-800/90 flex items-center gap-2.5 clip-chamfer-xs">
             <Zap className="w-4 h-4 text-purple-400 shrink-0" />
             <div>
-              <div className="text-[10px] text-slate-400">HIGHEST WAVE</div>
-              <div className="text-sm font-bold text-slate-200">Wave {stats.wave}</div>
+              <div className="text-[9px] text-slate-400 tracking-wider">SECTOR REACHED</div>
+              <div className="text-sm font-bold text-slate-100">Wave {stats.wave}</div>
             </div>
           </div>
 
-          <div className="p-2.5 rounded-xl bg-slate-900/60 border border-slate-800 flex items-center gap-2.5">
+          <div className="p-2.5 bg-[#050a1c] border border-slate-800/90 flex items-center gap-2.5 clip-chamfer-xs">
             <Crosshair className="w-4 h-4 text-cyan-400 shrink-0" />
             <div>
-              <div className="text-[10px] text-slate-400">METEORS HIT</div>
-              <div className="text-sm font-bold text-slate-200">{stats.meteorsDestroyed}</div>
+              <div className="text-[9px] text-slate-400 tracking-wider">HAZARDS DESTROYED</div>
+              <div className="text-sm font-bold text-slate-100">{stats.meteorsDestroyed}</div>
             </div>
           </div>
 
-          <div className="p-2.5 rounded-xl bg-slate-900/60 border border-slate-800 flex items-center gap-2.5">
+          <div className="p-2.5 bg-[#050a1c] border border-slate-800/90 flex items-center gap-2.5 clip-chamfer-xs">
             <Flame className="w-4 h-4 text-amber-400 shrink-0" />
             <div>
-              <div className="text-[10px] text-slate-400">MAX COMBO</div>
+              <div className="text-[9px] text-slate-400 tracking-wider">MAX STREAK</div>
               <div className="text-sm font-bold text-amber-300">
                 {stats.maxCombo && stats.maxCombo > 0 ? `${stats.maxCombo}x Streak` : "0x"}
               </div>
             </div>
           </div>
 
-          <div className="col-span-2 p-2.5 rounded-xl bg-slate-900/60 border border-slate-800 flex items-center justify-between font-mono">
+          <div className="col-span-2 p-2 bg-[#050a1c] border border-slate-800/90 flex items-center justify-between font-mono clip-chamfer-xs">
             <div className="flex items-center gap-2">
-              <Sparkles className="w-4 h-4 text-emerald-400 shrink-0" />
-              <span className="text-[10px] text-slate-400">BLASTER ACCURACY</span>
+              <Sparkles className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+              <span className="text-[10px] text-slate-400 tracking-wider">BLASTER ACCURACY</span>
             </div>
-            <span className="text-sm font-bold text-emerald-300">{accuracy}%</span>
+            <span className="text-xs font-bold text-emerald-300">{accuracy}%</span>
           </div>
         </div>
 
-        {/* Leaderboard Submission Status Pill */}
-        <div className="mb-6 p-2 rounded-xl bg-slate-950/80 border border-slate-800/80 flex items-center justify-center gap-2 text-xs">
+        {/* Verification Status Pill */}
+        <div className="mb-5 p-2 bg-[#040816] border border-slate-800 flex items-center justify-center gap-2 text-xs font-mono">
           {submissionStatus === "submitting" && (
             <>
-              <Loader2 className="w-4 h-4 text-cyan-400 animate-spin" />
-              <span className="text-slate-400">{statusMessage}</span>
+              <Loader2 className="w-3.5 h-3.5 text-cyan-400 animate-spin" />
+              <span className="text-slate-400 text-[11px]">{statusMessage}</span>
             </>
           )}
           {submissionStatus === "success" && (
             <>
-              <CheckCircle className="w-4 h-4 text-emerald-400" />
-              <span className="text-emerald-300 font-medium">{statusMessage}</span>
+              <CheckCircle className="w-3.5 h-3.5 text-emerald-400" />
+              <span className="text-emerald-300 text-[11px] font-medium">{statusMessage}</span>
             </>
           )}
           {submissionStatus === "error" && (
             <>
-              <AlertCircle className="w-4 h-4 text-rose-400" />
-              <span className="text-rose-300 font-medium">{statusMessage}</span>
+              <AlertCircle className="w-3.5 h-3.5 text-rose-400" />
+              <span className="text-rose-300 text-[11px] font-medium">{statusMessage}</span>
             </>
           )}
         </div>
 
-        {/* Action Buttons */}
+        {/* Tactical Actions */}
         <div className="space-y-2.5">
           <button
             onClick={() => {
               soundManager.playClick();
               onRestart();
             }}
-            className="w-full py-3.5 px-4 rounded-xl font-bold bg-gradient-to-r from-cyan-400 via-blue-500 to-purple-600 hover:from-cyan-300 hover:to-purple-500 text-black shadow-[0_0_25px_rgba(0,240,255,0.4)] transition-all flex items-center justify-center gap-2 cursor-pointer text-base"
+            className="w-full py-3 px-4 btn-arcade-cyan text-sm flex items-center justify-center gap-2 cursor-pointer clip-chamfer-sm"
           >
-            <RotateCcw className="w-5 h-5 fill-current" />
-            Play Again
+            <RotateCcw className="w-4 h-4 fill-current" />
+            <span>DEPLOY SORTIE AGAIN</span>
           </button>
 
-          <div className="grid grid-cols-2 gap-2.5">
+          <div className="grid grid-cols-2 gap-2">
             <Link
               href="/leaderboard"
               onClick={() => soundManager.playClick()}
-              className="py-2.5 px-3 rounded-xl font-medium bg-slate-900/90 hover:bg-slate-800 border border-slate-700 hover:border-cyan-400/50 text-slate-200 hover:text-white transition-all flex items-center justify-center gap-1.5 text-xs sm:text-sm"
+              className="py-2.5 px-3 btn-arcade-dark text-xs flex items-center justify-center gap-1.5 clip-chamfer-sm"
             >
-              <Trophy className="w-4 h-4 text-amber-400" />
-              Leaderboard
+              <Trophy className="w-3.5 h-3.5 text-amber-400" />
+              <span>Rankings</span>
             </Link>
 
             <Link
               href="/"
               onClick={() => soundManager.playClick()}
-              className="py-2.5 px-3 rounded-xl font-medium bg-slate-900/90 hover:bg-slate-800 border border-slate-700 hover:border-cyan-400/50 text-slate-200 hover:text-white transition-all flex items-center justify-center gap-1.5 text-xs sm:text-sm"
+              className="py-2.5 px-3 btn-arcade-dark text-xs flex items-center justify-center gap-1.5 clip-chamfer-sm"
             >
-              <Home className="w-4 h-4 text-cyan-400" />
-              Main Menu
+              <Home className="w-3.5 h-3.5 text-cyan-400" />
+              <span>Hangar Menu</span>
             </Link>
           </div>
         </div>

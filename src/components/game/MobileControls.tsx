@@ -143,7 +143,7 @@ export default function MobileControls({
       onPointerMove={handlePointerMove}
       onPointerUp={handlePointerUp}
       onPointerCancel={handlePointerUp}
-      className="md:hidden absolute inset-x-0 bottom-0 h-52 z-20 touch-none select-none flex items-center justify-between px-6"
+      className="md:hidden absolute inset-x-0 bottom-0 h-52 z-20 touch-none select-none flex items-center justify-between px-6 pointer-events-auto"
       style={{ touchAction: "none" }}
     >
       {/* Left Stick (Move) Visual */}
@@ -152,20 +152,28 @@ export default function MobileControls({
           className="absolute pointer-events-none -translate-x-1/2 -translate-y-1/2"
           style={{ left: leftStick.origin.x, top: leftStick.origin.y }}
         >
-          <div className="w-24 h-24 rounded-full border-2 border-cyan-400/40 bg-cyan-950/40 backdrop-blur-sm shadow-[0_0_20px_rgba(0,240,255,0.3)] flex items-center justify-center relative">
-            <div className="w-2 h-2 rounded-full bg-cyan-400/60" />
+          <div className="w-24 h-24 rounded-full border border-cyan-400/60 bg-[#060b1e]/85 backdrop-blur-sm shadow-[0_0_15px_rgba(0,240,255,0.25)] flex items-center justify-center relative">
+            {/* Crosshair ticks */}
+            <div className="absolute top-1 w-0.5 h-2 bg-cyan-400/80" />
+            <div className="absolute bottom-1 w-0.5 h-2 bg-cyan-400/80" />
+            <div className="absolute left-1 h-0.5 w-2 bg-cyan-400/80" />
+            <div className="absolute right-1 h-0.5 w-2 bg-cyan-400/80" />
+
+            <div className="w-1.5 h-1.5 rounded-full bg-cyan-400/80" />
             <div
-              className="absolute w-12 h-12 rounded-full bg-gradient-to-br from-cyan-400 to-blue-600 shadow-[0_0_15px_rgba(0,240,255,0.8)] border border-white/60 -translate-x-1/2 -translate-y-1/2 top-1/2 left-1/2"
+              className="absolute w-10 h-10 rounded-full bg-cyan-400/95 border border-white shadow-[0_0_12px_rgba(0,240,255,0.7)] -translate-x-1/2 -translate-y-1/2 top-1/2 left-1/2 flex items-center justify-center"
               style={{
                 transform: `translate(calc(-50% + ${leftStick.knobPos.x}px), calc(-50% + ${leftStick.knobPos.y}px))`,
               }}
-            />
+            >
+              <div className="w-2 h-2 rounded-full bg-slate-950" />
+            </div>
           </div>
         </div>
       ) : (
-        <div className="pointer-events-none flex flex-col items-center justify-center opacity-50">
-          <div className="w-20 h-20 rounded-full border border-dashed border-cyan-500/40 flex items-center justify-center">
-            <span className="text-[10px] font-mono text-cyan-300 font-bold">MOVE</span>
+        <div className="pointer-events-none flex flex-col items-center justify-center opacity-45">
+          <div className="w-16 h-16 rounded-full border border-cyan-500/40 bg-[#050a1c]/60 flex items-center justify-center relative">
+            <span className="text-[9px] font-mono text-cyan-300 font-bold tracking-widest uppercase">NAV</span>
           </div>
         </div>
       )}
@@ -176,20 +184,28 @@ export default function MobileControls({
           className="absolute pointer-events-none -translate-x-1/2 -translate-y-1/2"
           style={{ left: rightStick.origin.x, top: rightStick.origin.y }}
         >
-          <div className="w-24 h-24 rounded-full border-2 border-rose-500/40 bg-rose-950/40 backdrop-blur-sm shadow-[0_0_20px_rgba(244,63,94,0.3)] flex items-center justify-center relative">
-            <div className="w-2 h-2 rounded-full bg-rose-400/60" />
+          <div className="w-24 h-24 rounded-full border border-amber-400/60 bg-[#060b1e]/85 backdrop-blur-sm shadow-[0_0_15px_rgba(245,158,11,0.25)] flex items-center justify-center relative">
+            {/* Crosshair ticks */}
+            <div className="absolute top-1 w-0.5 h-2 bg-amber-400/80" />
+            <div className="absolute bottom-1 w-0.5 h-2 bg-amber-400/80" />
+            <div className="absolute left-1 h-0.5 w-2 bg-amber-400/80" />
+            <div className="absolute right-1 h-0.5 w-2 bg-amber-400/80" />
+
+            <div className="w-1.5 h-1.5 rounded-full bg-amber-400/80" />
             <div
-              className="absolute w-12 h-12 rounded-full bg-gradient-to-br from-rose-500 to-purple-600 shadow-[0_0_15px_rgba(244,63,94,0.8)] border border-white/60 -translate-x-1/2 -translate-y-1/2 top-1/2 left-1/2"
+              className="absolute w-10 h-10 rounded-full bg-amber-400/95 border border-white shadow-[0_0_12px_rgba(245,158,11,0.7)] -translate-x-1/2 -translate-y-1/2 top-1/2 left-1/2 flex items-center justify-center"
               style={{
                 transform: `translate(calc(-50% + ${rightStick.knobPos.x}px), calc(-50% + ${rightStick.knobPos.y}px))`,
               }}
-            />
+            >
+              <div className="w-2 h-2 rounded-full bg-slate-950" />
+            </div>
           </div>
         </div>
       ) : (
-        <div className="pointer-events-none flex flex-col items-center justify-center opacity-50">
-          <div className="w-20 h-20 rounded-full border border-dashed border-rose-500/40 flex items-center justify-center">
-            <span className="text-[10px] font-mono text-rose-300 font-bold">AIM & FIRE</span>
+        <div className="pointer-events-none flex flex-col items-center justify-center opacity-45">
+          <div className="w-16 h-16 rounded-full border border-amber-500/40 bg-[#050a1c]/60 flex items-center justify-center relative">
+            <span className="text-[9px] font-mono text-amber-300 font-bold tracking-widest uppercase">FIRE</span>
           </div>
         </div>
       )}

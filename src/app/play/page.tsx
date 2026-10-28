@@ -9,9 +9,9 @@ export const metadata: Metadata = {
 
 export default function PlayPage() {
   return (
-    <div className="h-screen w-screen flex flex-col bg-[#050713] overflow-hidden select-none">
+    <div className="h-screen w-screen flex flex-col bg-[#02040a] overflow-hidden select-none font-mono">
       <Navbar />
-      <main className="flex-1 w-full max-w-7xl mx-auto p-0 sm:p-4 flex flex-col justify-center items-center overflow-hidden">
+      <main className="flex-1 w-full max-w-7xl mx-auto p-0 sm:p-2 flex flex-col justify-center items-center overflow-hidden">
         <GameCanvas />
       </main>
     </div>

@@ -1,3 +1,5 @@
+import { useSyncExternalStore } from "react";
+
 export interface LocalPlayerProfile {
   guestId: string;
   displayName: string;
@@ -17,23 +19,56 @@ export interface LocalPlayerProfile {
 
 const STORAGE_KEY = "starfall_player_profile";
 
+const SERVER_FALLBACK_PROFILE: LocalPlayerProfile = {
+  guestId: "guest_server",
+  displayName: "Pilot",
+  personalBestScore: 0,
+  bestSurvivalSeconds: 0,
+  totalGamesPlayed: 0,
+  totalMeteorsDestroyed: 0,
+  recentRuns: [],
+};
+
+let cachedProfile: LocalPlayerProfile | null = null;
+const listeners = new Set<() => void>();
+
+function notifyProfileListeners() {
+  cachedProfile = null;
+  listeners.forEach((l) => l());
+}
+
+function subscribeProfile(callback: () => void) {
+  listeners.add(callback);
+  const handleStorage = (e: StorageEvent) => {
+    if (e.key === STORAGE_KEY) {
+      notifyProfileListeners();
+    }
+  };
+  if (typeof window !== "undefined") {
+    window.addEventListener("storage", handleStorage);
+  }
+  return () => {
+    listeners.delete(callback);
+    if (typeof window !== "undefined") {
+      window.removeEventListener("storage", handleStorage);
+    }
+  };
+}
+
 export function getPlayerProfile(): LocalPlayerProfile {
   if (typeof window === "undefined") {
-    return {
-      guestId: "guest_server",
-      displayName: "Star-Pilot",
-      personalBestScore: 0,
-      bestSurvivalSeconds: 0,
-      totalGamesPlayed: 0,
-      totalMeteorsDestroyed: 0,
-      recentRuns: [],
-    };
+    return SERVER_FALLBACK_PROFILE;
+  }
+
+  if (cachedProfile) {
+    return cachedProfile;
   }
 
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (raw) {
-      return JSON.parse(raw);
+      cachedProfile = JSON.parse(raw);
+      return cachedProfile!;
     }
   } catch (e) {
     console.warn("Error reading player profile:", e);
@@ -52,6 +87,7 @@ export function getPlayerProfile(): LocalPlayerProfile {
   };
 
   savePlayerProfile(defaultProfile);
+  cachedProfile = defaultProfile;
   return defaultProfile;
 }
 
@@ -59,9 +95,19 @@ export function savePlayerProfile(profile: LocalPlayerProfile) {
   if (typeof window === "undefined") return;
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(profile));
+    cachedProfile = profile;
+    notifyProfileListeners();
   } catch (e) {
     console.warn("Error saving player profile:", e);
   }
+}
+
+export function usePlayerProfile(): LocalPlayerProfile {
+  return useSyncExternalStore(
+    subscribeProfile,
+    getPlayerProfile,
+    () => SERVER_FALLBACK_PROFILE
+  );
 }
 
 export function updateProfileAfterRun(

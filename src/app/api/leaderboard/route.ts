@@ -30,8 +30,19 @@ export async function GET(req: NextRequest) {
         .order("created_at", { ascending: true })
         .limit(limit);
 
+      interface SupabaseGameRunRow {
+        id: string;
+        display_name: string;
+        score: number;
+        survival_seconds: number;
+        meteors_destroyed: number;
+        highest_wave: number;
+        created_at: string;
+        user_id?: string | null;
+      }
+
       if (!error && data) {
-        const entries: LeaderboardEntry[] = (data as any[]).map((row, idx) => ({
+        const entries: LeaderboardEntry[] = (data as unknown as SupabaseGameRunRow[]).map((row, idx) => ({
           rank: idx + 1,
           id: row.id,
           display_name: row.display_name,

@@ -1,19 +1,28 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useSyncExternalStore } from "react";
 import { Volume2, VolumeX } from "lucide-react";
 import { soundManager } from "@/game/audio/SoundManager";
 
-export default function SoundToggle({ className = "" }: { className?: string }) {
-  const [isMuted, setIsMuted] = useState(false);
+function subscribeSound(callback: () => void) {
+  if (typeof window === "undefined") return () => {};
+  window.addEventListener("starfall_sound_changed", callback);
+  window.addEventListener("storage", callback);
+  return () => {
+    window.removeEventListener("starfall_sound_changed", callback);
+    window.removeEventListener("storage", callback);
+  };
+}
 
-  useEffect(() => {
-    setIsMuted(soundManager.getMuted());
-  }, []);
+export default function SoundToggle({ className = "" }: { className?: string }) {
+  const isMuted = useSyncExternalStore(
+    subscribeSound,
+    () => soundManager.getMuted(),
+    () => false
+  );
 
   const handleToggle = () => {
     const muted = soundManager.toggleMute();
-    setIsMuted(muted);
     if (!muted) {
       soundManager.playClick();
     }
@@ -22,11 +31,15 @@ export default function SoundToggle({ className = "" }: { className?: string }) 
   return (
     <button
       onClick={handleToggle}
-      className={`p-2 rounded-lg bg-slate-900/80 border border-cyan-500/30 hover:border-cyan-400 text-cyan-300 hover:text-white transition-all shadow-sm hover:shadow-[0_0_12px_rgba(0,240,255,0.3)] flex items-center justify-center cursor-pointer ${className}`}
+      className={`p-1.5 sm:p-2 clip-chamfer-xs bg-[#050a1c] border border-slate-700 hover:border-cyan-400 text-slate-300 hover:text-white transition-all flex items-center justify-center cursor-pointer ${className}`}
       title={isMuted ? "Unmute Sound" : "Mute Sound"}
       aria-label={isMuted ? "Unmute Sound" : "Mute Sound"}
     >
-      {isMuted ? <VolumeX className="w-5 h-5 text-rose-400" /> : <Volume2 className="w-5 h-5 text-cyan-400" />}
+      {isMuted ? (
+        <VolumeX className="w-4 h-4 text-amber-400" />
+      ) : (
+        <Volume2 className="w-4 h-4 text-cyan-400" />
+      )}
     </button>
   );
 }

@@ -394,18 +394,18 @@ export function renderMeteor(ctx: CanvasRenderingContext2D, m: MeteorEntity) {
   ctx.translate(m.x, m.y);
   ctx.rotate(m.rotation);
 
-  // Outer glow
+  // Outer glow (restrained to prevent muddy neon haze)
   ctx.shadowColor = m.glowColor;
-  let shadowBlur = 10;
+  let shadowBlur = 6;
   if (m.type === "speed") {
-    shadowBlur = m.isBursting ? 26 : m.isChargingBurst ? 18 : 12;
+    shadowBlur = m.isBursting ? 16 : m.isChargingBurst ? 10 : 6;
   } else if (m.type === "heavy") {
-    shadowBlur = 16;
+    shadowBlur = 8;
   } else if (m.type === "explosive") {
-    const pulse = Math.sin(m.warningPulsePhase || 0) * 6;
-    shadowBlur = 14 + Math.max(0, pulse);
+    const pulse = Math.sin(m.warningPulsePhase || 0) * 4;
+    shadowBlur = 8 + Math.max(0, pulse);
   } else if (m.type === "pulsar") {
-    shadowBlur = 18;
+    shadowBlur = 10;
   }
   ctx.shadowBlur = shadowBlur;
 
@@ -577,15 +577,15 @@ export function renderMeteor(ctx: CanvasRenderingContext2D, m: MeteorEntity) {
 
   // E. Drifting Meteor: Cosmic plasma crescent swirl
   else if (m.type === "drifting") {
-    ctx.strokeStyle = "rgba(236, 72, 153, 0.85)";
+    ctx.strokeStyle = "rgba(129, 140, 248, 0.85)";
     ctx.lineWidth = 2.0;
-    ctx.shadowColor = "#ec4899";
+    ctx.shadowColor = "#818cf8";
     ctx.shadowBlur = 6;
     ctx.beginPath();
     ctx.arc(0, 0, m.radius * 0.55, 0, Math.PI * 1.4);
     ctx.stroke();
 
-    ctx.fillStyle = "rgba(236, 72, 153, 0.4)";
+    ctx.fillStyle = "rgba(129, 140, 248, 0.35)";
     ctx.beginPath();
     ctx.arc(m.radius * 0.2, -m.radius * 0.2, m.radius * 0.28, 0, Math.PI * 2);
     ctx.fill();

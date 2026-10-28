@@ -1,15 +1,12 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
 import CosmicBackground from "@/components/layout/CosmicBackground";
 import {
   User,
   Trophy,
-  Clock,
-  Crosshair,
-  Flame,
   Save,
   Check,
   Play,
@@ -18,31 +15,26 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import {
-  getPlayerProfile,
+  usePlayerProfile,
   savePlayerProfile,
-  LocalPlayerProfile,
 } from "@/lib/storage/guestProfile";
 import { soundManager } from "@/game/audio/SoundManager";
 
 export default function ProfilePage() {
-  const [profile, setProfile] = useState<LocalPlayerProfile | null>(null);
-  const [callsign, setCallsign] = useState("");
+  const profile = usePlayerProfile();
+  const [callsignInput, setCallsignInput] = useState<string | null>(null);
   const [savedSuccess, setSavedSuccess] = useState(false);
 
-  useEffect(() => {
-    const p = getPlayerProfile();
-    setProfile(p);
-    setCallsign(p.displayName);
-  }, []);
+  const displayCallsign = callsignInput !== null ? callsignInput : profile.displayName;
 
   const handleSaveCallsign = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!profile || !callsign.trim()) return;
+    if (!displayCallsign.trim()) return;
 
     soundManager.playClick();
-    const updated = { ...profile, displayName: callsign.trim().slice(0, 24) };
+    const updated = { ...profile, displayName: displayCallsign.trim().slice(0, 24) };
     savePlayerProfile(updated);
-    setProfile(updated);
+    setCallsignInput(null);
     setSavedSuccess(true);
     setTimeout(() => setSavedSuccess(false), 2500);
   };
@@ -54,30 +46,28 @@ export default function ProfilePage() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col bg-[#050713]">
+    <div className="min-h-screen flex flex-col bg-[#02040a] font-mono arcade-grid selection:bg-cyan-400 selection:text-black">
       <CosmicBackground />
       <Navbar />
 
-      <main className="flex-1 max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-10 sm:py-14 w-full space-y-8">
-        {/* Header */}
-        <div className="flex flex-col sm:flex-row items-center justify-between gap-4 glass-panel p-6 sm:p-8 rounded-3xl border border-cyan-500/30">
+      <main className="flex-1 max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-10 sm:py-14 w-full space-y-6">
+        {/* Pilot Header Dossier */}
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-4 hud-panel-strong p-6 border border-cyan-500/30 corner-bracket">
           <div className="flex items-center gap-4">
-            <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-cyan-400 via-blue-600 to-purple-600 p-[2px] shadow-[0_0_20px_rgba(0,240,255,0.4)]">
-              <div className="w-full h-full bg-[#070b1e] rounded-[14px] flex items-center justify-center">
-                <User className="w-8 h-8 text-cyan-400" />
-              </div>
+            <div className="w-14 h-14 bg-[#060b1e] border border-cyan-400/60 flex items-center justify-center shadow-[0_0_15px_rgba(0,240,255,0.25)] clip-chamfer-xs">
+              <User className="w-7 h-7 text-cyan-400" />
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <h1 className="text-2xl sm:text-3xl font-black text-white tracking-wide">
+                <h1 className="text-xl sm:text-2xl font-black text-white tracking-wider uppercase text-glow-cyan">
                   {profile?.displayName || "Pilot"}
                 </h1>
-                <span className="px-2 py-0.5 rounded text-[10px] font-mono bg-cyan-500/20 text-cyan-300 border border-cyan-500/40">
+                <span className="px-1.5 py-0.5 text-[10px] bg-cyan-950/80 text-cyan-300 border border-cyan-500/40 clip-chamfer-xs">
                   ACTIVE
                 </span>
               </div>
-              <p className="text-xs text-slate-400 font-mono mt-1">
-                ID: {profile?.guestId || "Connecting..."}
+              <p className="text-[11px] text-slate-400 mt-0.5">
+                IDENT: {profile?.guestId || "STANDBY"}
               </p>
             </div>
           </div>
@@ -85,41 +75,41 @@ export default function ProfilePage() {
           <Link
             href="/play"
             onClick={() => soundManager.playClick()}
-            className="px-6 py-3 rounded-xl font-bold bg-gradient-to-r from-cyan-400 to-blue-600 text-black shadow-[0_0_15px_rgba(0,240,255,0.3)] hover:shadow-[0_0_25px_rgba(0,240,255,0.5)] transition-all flex items-center gap-2 cursor-pointer text-sm"
+            className="w-full sm:w-auto px-6 py-2.5 btn-arcade-cyan text-xs flex items-center justify-center gap-2 cursor-pointer clip-chamfer-sm"
           >
-            <Play className="w-4 h-4 fill-current" />
-            Launch Next Mission
+            <Play className="w-3.5 h-3.5 fill-current" />
+            <span>LAUNCH SORTIE</span>
           </Link>
         </div>
 
         {/* Change Callsign Section */}
-        <div className="glass-panel p-6 rounded-2xl border border-slate-800 space-y-4">
-          <h2 className="text-base font-bold text-white flex items-center gap-2">
-            <Shield className="w-4 h-4 text-cyan-400" />
+        <div className="hud-panel p-5 border border-slate-800 space-y-3 corner-bracket">
+          <h2 className="text-xs font-bold text-white uppercase tracking-wider flex items-center gap-2">
+            <Shield className="w-3.5 h-3.5 text-cyan-400" />
             Pilot Identification (Callsign)
           </h2>
-          <form onSubmit={handleSaveCallsign} className="flex flex-col sm:flex-row gap-3">
+          <form onSubmit={handleSaveCallsign} className="flex flex-col sm:flex-row gap-2.5">
             <input
               type="text"
-              value={callsign}
+              value={displayCallsign}
               maxLength={24}
-              onChange={(e) => setCallsign(e.target.value)}
-              placeholder="Enter your pilot callsign..."
-              className="flex-1 px-4 py-2.5 rounded-xl bg-slate-900/80 border border-slate-700 focus:border-cyan-400 text-white font-mono text-sm focus:outline-none transition-all"
+              onChange={(e) => setCallsignInput(e.target.value)}
+              placeholder="Enter callsign..."
+              className="flex-1 px-3.5 py-2 bg-[#050a1c] border border-slate-800 focus:border-cyan-400 text-white text-xs focus:outline-none transition-all clip-chamfer-xs"
             />
             <button
               type="submit"
-              className="px-5 py-2.5 rounded-xl font-bold bg-slate-800 hover:bg-slate-700 border border-cyan-500/30 hover:border-cyan-400 text-cyan-300 hover:text-white transition-all flex items-center justify-center gap-2 cursor-pointer text-sm"
+              className="px-5 py-2 btn-arcade-dark text-xs flex items-center justify-center gap-1.5 cursor-pointer clip-chamfer-xs"
             >
               {savedSuccess ? (
                 <>
-                  <Check className="w-4 h-4 text-emerald-400" />
-                  <span className="text-emerald-400">Updated!</span>
+                  <Check className="w-3.5 h-3.5 text-emerald-400" />
+                  <span className="text-emerald-400">UPDATED</span>
                 </>
               ) : (
                 <>
-                  <Save className="w-4 h-4" />
-                  <span>Update Callsign</span>
+                  <Save className="w-3.5 h-3.5 text-cyan-400" />
+                  <span>SAVE CALLSIGN</span>
                 </>
               )}
             </button>
@@ -127,36 +117,36 @@ export default function ProfilePage() {
         </div>
 
         {/* Career Statistics Grid */}
-        <div className="space-y-3">
-          <h2 className="text-lg font-bold text-white flex items-center gap-2">
-            <Trophy className="w-5 h-5 text-amber-400" />
-            Career Flight Statistics
+        <div className="space-y-2.5">
+          <h2 className="text-xs font-bold text-slate-300 uppercase tracking-wider flex items-center gap-2">
+            <Trophy className="w-3.5 h-3.5 text-amber-400" />
+            Career Telemetry Records
           </h2>
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-            <div className="glass-card p-4 rounded-xl border border-amber-500/20">
-              <div className="text-[11px] font-mono text-amber-400 uppercase">PERSONAL BEST</div>
-              <div className="text-xl sm:text-2xl font-black font-mono text-white mt-1">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            <div className="hud-panel p-3.5 border border-amber-500/30 clip-chamfer-xs">
+              <div className="text-[10px] text-amber-400 uppercase tracking-wider">PERSONAL BEST</div>
+              <div className="text-lg sm:text-xl font-black text-white mt-0.5 text-glow-amber">
                 {profile?.personalBestScore.toLocaleString() || 0}
               </div>
             </div>
 
-            <div className="glass-card p-4 rounded-xl border border-blue-500/20">
-              <div className="text-[11px] font-mono text-blue-400 uppercase">LONGEST SURVIVAL</div>
-              <div className="text-xl sm:text-2xl font-black font-mono text-white mt-1">
+            <div className="hud-panel p-3.5 border border-cyan-500/30 clip-chamfer-xs">
+              <div className="text-[10px] text-cyan-400 uppercase tracking-wider">MAX SURVIVAL</div>
+              <div className="text-lg sm:text-xl font-black text-white mt-0.5">
                 {formatTime(profile?.bestSurvivalSeconds || 0)}
               </div>
             </div>
 
-            <div className="glass-card p-4 rounded-xl border border-purple-500/20">
-              <div className="text-[11px] font-mono text-purple-400 uppercase">TOTAL SORTIES</div>
-              <div className="text-xl sm:text-2xl font-black font-mono text-white mt-1">
+            <div className="hud-panel p-3.5 border border-purple-500/30 clip-chamfer-xs">
+              <div className="text-[10px] text-purple-400 uppercase tracking-wider">TOTAL SORTIES</div>
+              <div className="text-lg sm:text-xl font-black text-white mt-0.5">
                 {profile?.totalGamesPlayed || 0}
               </div>
             </div>
 
-            <div className="glass-card p-4 rounded-xl border border-rose-500/20">
-              <div className="text-[11px] font-mono text-rose-400 uppercase">METEORS HIT</div>
-              <div className="text-xl sm:text-2xl font-black font-mono text-white mt-1">
+            <div className="hud-panel p-3.5 border border-rose-500/30 clip-chamfer-xs">
+              <div className="text-[10px] text-rose-400 uppercase tracking-wider">HAZARDS HIT</div>
+              <div className="text-lg sm:text-xl font-black text-white mt-0.5">
                 {profile?.totalMeteorsDestroyed.toLocaleString() || 0}
               </div>
             </div>
@@ -164,32 +154,32 @@ export default function ProfilePage() {
         </div>
 
         {/* Recent Sorties Log */}
-        <div className="glass-panel p-6 rounded-2xl border border-slate-800 space-y-4">
-          <h2 className="text-lg font-bold text-white flex items-center gap-2">
-            <History className="w-5 h-5 text-cyan-400" />
-            Recent Flight Telemetry
+        <div className="hud-panel p-5 border border-slate-800 space-y-3 corner-bracket">
+          <h2 className="text-xs font-bold text-slate-300 uppercase tracking-wider flex items-center gap-2">
+            <History className="w-3.5 h-3.5 text-cyan-400" />
+            Recent Sortie History
           </h2>
 
           {!profile?.recentRuns || profile.recentRuns.length === 0 ? (
             <p className="text-xs text-slate-500 py-6 text-center font-mono">
-              No previous combat flights recorded. Launch a mission to log telemetry.
+              No previous combat flights recorded. Launch a sortie to log telemetry.
             </p>
           ) : (
             <div className="overflow-x-auto">
-              <table className="w-full text-left font-mono text-xs">
+              <table className="w-full text-left text-xs font-mono">
                 <thead>
-                  <tr className="border-b border-slate-800 text-slate-400 uppercase text-[10px]">
+                  <tr className="border-b border-slate-800 text-slate-400 uppercase text-[10px] bg-[#040816]">
                     <th className="py-2.5 px-3">Date</th>
                     <th className="py-2.5 px-3">Score</th>
                     <th className="py-2.5 px-3">Survival</th>
                     <th className="py-2.5 px-3">Wave</th>
-                    <th className="py-2.5 px-3 text-right">Meteors</th>
+                    <th className="py-2.5 px-3 text-right">Hazards</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-800/60">
                   {profile.recentRuns.map((run, idx) => (
                     <tr key={run.runId || idx} className="hover:bg-slate-900/40">
-                      <td className="py-2.5 px-3 text-slate-400">
+                      <td className="py-2.5 px-3 text-slate-400 text-[11px]">
                         {new Date(run.date).toLocaleDateString(undefined, {
                           month: "short",
                           day: "numeric",

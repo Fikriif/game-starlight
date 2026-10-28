@@ -277,74 +277,92 @@ export class Player {
     }
 
     // Ship Hull Design (Nose pointing forward along +X)
-    ctx.shadowColor = "#00f0ff";
-    ctx.shadowBlur = 12;
+    ctx.shadowColor = "rgba(0, 240, 255, 0.5)";
+    ctx.shadowBlur = 8;
 
+    // Main Aerospace Interceptor Polygon
     ctx.beginPath();
-    ctx.moveTo(this.state.radius * 1.35, 0); // Sharp Forward Nose / Muzzle
-    ctx.lineTo(-this.state.radius * 0.9, -this.state.radius * 0.95); // Left Wingtip
-    ctx.lineTo(-this.state.radius * 0.45, -this.state.radius * 0.35); // Left Inner
-    ctx.lineTo(-this.state.radius * 0.85, 0); // Tail
-    ctx.lineTo(-this.state.radius * 0.45, this.state.radius * 0.35); // Right Inner
-    ctx.lineTo(-this.state.radius * 0.9, this.state.radius * 0.95); // Right Wingtip
+    ctx.moveTo(this.state.radius * 1.35, 0); // Sharp Forward Nose Muzzle
+    ctx.lineTo(this.state.radius * 0.4, -this.state.radius * 0.35); // Forward Chiseled Shoulder
+    ctx.lineTo(-this.state.radius * 0.85, -this.state.radius * 0.95); // Left Wingtip
+    ctx.lineTo(-this.state.radius * 0.65, -this.state.radius * 0.4); // Wing Inset
+    ctx.lineTo(-this.state.radius * 0.9, -this.state.radius * 0.25); // Left Engine Cowling
+    ctx.lineTo(-this.state.radius * 0.75, 0); // Engine Valley / Center Tail
+    ctx.lineTo(-this.state.radius * 0.9, this.state.radius * 0.25); // Right Engine Cowling
+    ctx.lineTo(-this.state.radius * 0.65, this.state.radius * 0.4); // Wing Inset
+    ctx.lineTo(-this.state.radius * 0.85, this.state.radius * 0.95); // Right Wingtip
+    ctx.lineTo(this.state.radius * 0.4, this.state.radius * 0.35); // Forward Chiseled Shoulder
     ctx.closePath();
 
-    // High-tech aerospace gradient
+    // Tactical Chiseled Hull Gradient (Dark Navy to Polished Alloy)
     const hullGrad = ctx.createLinearGradient(
       this.state.radius * 1.35,
       0,
-      -this.state.radius,
+      -this.state.radius * 0.9,
       0
     );
-    hullGrad.addColorStop(0, "#ffffff");
-    hullGrad.addColorStop(0.3, "#38bdf8");
-    hullGrad.addColorStop(0.75, "#0e1a3d");
-    hullGrad.addColorStop(1, "#030712");
+    hullGrad.addColorStop(0, "#f8fafc");
+    hullGrad.addColorStop(0.25, "#38bdf8");
+    hullGrad.addColorStop(0.65, "#0d1b38");
+    hullGrad.addColorStop(1, "#040918");
 
     ctx.fillStyle = hullGrad;
     ctx.fill();
 
-    ctx.strokeStyle = "#00f0ff";
-    ctx.lineWidth = 1.8;
+    ctx.strokeStyle = "rgba(0, 240, 255, 0.85)";
+    ctx.lineWidth = 1.6;
     ctx.stroke();
 
-    // Center Fuselage Spine Line
-    ctx.strokeStyle = "rgba(255, 255, 255, 0.4)";
-    ctx.lineWidth = 1.2;
-    ctx.beginPath();
-    ctx.moveTo(this.state.radius * 1.2, 0);
-    ctx.lineTo(-this.state.radius * 0.4, 0);
-    ctx.stroke();
-
-    // Cockpit Canopy (Glowing Cyan Gem)
-    ctx.beginPath();
-    ctx.ellipse(
-      this.state.radius * 0.3,
-      0,
-      this.state.radius * 0.4,
-      this.state.radius * 0.18,
-      0,
-      0,
-      Math.PI * 2
-    );
-    ctx.fillStyle = "#00f0ff";
-    ctx.shadowColor = "#00f0ff";
-    ctx.shadowBlur = 10;
-    ctx.fill();
-
-    // Wingtip Plasma Cannons
-    ctx.fillStyle = "#ff007f";
-    ctx.shadowColor = "#ff007f";
-    ctx.shadowBlur = 8;
-    ctx.fillRect(-this.state.radius * 0.85, -this.state.radius * 0.95, 4, 3);
-    ctx.fillRect(-this.state.radius * 0.85, this.state.radius * 0.95 - 3, 4, 3);
-
-    // Visible Nose Cannon Muzzle Tip
+    // Twin Engine Exhaust Wells (Rear Thruster Mounts)
     ctx.fillStyle = "#00f0ff";
     ctx.shadowColor = "#00f0ff";
     ctx.shadowBlur = 6;
+    ctx.fillRect(-this.state.radius * 0.92, -this.state.radius * 0.25, 3, 4);
+    ctx.fillRect(-this.state.radius * 0.92, this.state.radius * 0.25 - 4, 3, 4);
+
+    // Center Fuselage Armor Seams & Spine
+    ctx.shadowBlur = 0;
+    ctx.strokeStyle = "rgba(255, 255, 255, 0.45)";
+    ctx.lineWidth = 1.2;
     ctx.beginPath();
-    ctx.arc(this.state.radius * 1.35, 0, 2, 0, Math.PI * 2);
+    ctx.moveTo(this.state.radius * 1.15, 0);
+    ctx.lineTo(-this.state.radius * 0.4, 0);
+    ctx.stroke();
+
+    // Wing Panel Armor Grooves
+    ctx.strokeStyle = "rgba(56, 189, 248, 0.35)";
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(this.state.radius * 0.2, -this.state.radius * 0.25);
+    ctx.lineTo(-this.state.radius * 0.5, -this.state.radius * 0.7);
+    ctx.moveTo(this.state.radius * 0.2, this.state.radius * 0.25);
+    ctx.lineTo(-this.state.radius * 0.5, this.state.radius * 0.7);
+    ctx.stroke();
+
+    // Cockpit Canopy (Tactical Hexagonal Cyan Sensor Pod)
+    ctx.beginPath();
+    ctx.moveTo(this.state.radius * 0.6, 0);
+    ctx.lineTo(this.state.radius * 0.2, -this.state.radius * 0.18);
+    ctx.lineTo(-this.state.radius * 0.1, -this.state.radius * 0.14);
+    ctx.lineTo(-this.state.radius * 0.1, this.state.radius * 0.14);
+    ctx.lineTo(this.state.radius * 0.2, this.state.radius * 0.18);
+    ctx.closePath();
+
+    ctx.fillStyle = "#00f0ff";
+    ctx.shadowColor = "#00f0ff";
+    ctx.shadowBlur = 8;
+    ctx.fill();
+
+    // Wingtip Formation Lights (Tactical Cyan Beacons)
+    ctx.fillStyle = "#ffffff";
+    ctx.shadowColor = "#00f0ff";
+    ctx.shadowBlur = 6;
+    ctx.fillRect(-this.state.radius * 0.82, -this.state.radius * 0.95, 3, 2);
+    ctx.fillRect(-this.state.radius * 0.82, this.state.radius * 0.95 - 2, 3, 2);
+
+    // Visible Nose Cannon Muzzle Tip
+    ctx.beginPath();
+    ctx.arc(this.state.radius * 1.35, 0, 1.8, 0, Math.PI * 2);
     ctx.fill();
 
     ctx.restore();
@@ -356,12 +374,12 @@ export class Player {
 
       const shieldRadius = this.state.radius * 1.8;
       ctx.shadowColor = "#38bdf8";
-      ctx.shadowBlur = 18;
+      ctx.shadowBlur = 14;
 
-      ctx.strokeStyle = "rgba(56, 189, 248, 0.85)";
-      ctx.lineWidth = 2.5;
+      ctx.strokeStyle = "rgba(56, 189, 248, 0.75)";
+      ctx.lineWidth = 2.0;
 
-      // Hexagonal forcefield
+      // Hexagonal forcefield with rotating nodes
       ctx.beginPath();
       const sides = 6;
       const rot = Date.now() * 0.0015;
@@ -375,8 +393,19 @@ export class Player {
       ctx.closePath();
       ctx.stroke();
 
-      // Pulsing inner shield aura
-      ctx.fillStyle = "rgba(56, 189, 248, 0.12)";
+      // Shield node vertices
+      ctx.fillStyle = "#ffffff";
+      for (let i = 0; i < sides; i++) {
+        const a = rot + (i * Math.PI * 2) / sides;
+        const px = Math.cos(a) * shieldRadius;
+        const py = Math.sin(a) * shieldRadius;
+        ctx.beginPath();
+        ctx.arc(px, py, 2, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      // Inner forcefield aura
+      ctx.fillStyle = "rgba(56, 189, 248, 0.08)";
       ctx.beginPath();
       ctx.arc(0, 0, shieldRadius * 0.95, 0, Math.PI * 2);
       ctx.fill();

@@ -1,6 +1,6 @@
 "use client";
 
-import { Play, RotateCcw, Home } from "lucide-react";
+import { Play, RotateCcw, Home, Crosshair } from "lucide-react";
 import Link from "next/link";
 import SoundToggle from "../ui/SoundToggle";
 import { soundManager } from "@/game/audio/SoundManager";
@@ -12,30 +12,32 @@ interface PauseModalProps {
 
 export default function PauseModal({ onResume, onRestart }: PauseModalProps) {
   return (
-    <div className="absolute inset-0 z-30 bg-[#050713]/80 backdrop-blur-md flex items-center justify-center p-4">
-      <div className="glass-panel max-w-sm w-full p-6 sm:p-8 rounded-2xl border border-cyan-500/40 shadow-[0_0_40px_rgba(0,240,255,0.25)] text-center flex flex-col items-center">
-        {/* Title */}
-        <div className="w-12 h-12 rounded-xl bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center mb-3">
-          <Play className="w-6 h-6 text-cyan-400 fill-cyan-400" />
+    <div className="absolute inset-0 z-30 bg-[#02040a]/88 backdrop-blur-sm flex items-center justify-center p-4">
+      <div className="hud-panel-strong max-w-sm w-full p-6 sm:p-7 border border-cyan-500/40 shadow-[0_0_40px_rgba(0,0,0,0.95)] text-center flex flex-col items-center corner-bracket">
+        {/* Status Tag */}
+        <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 text-[10px] font-mono tracking-widest uppercase bg-[#060e22] text-cyan-400 border border-cyan-500/40 mb-2">
+          <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse" />
+          <span>FLIGHT SUSPENDED</span>
         </div>
-        <h2 className="text-2xl font-black tracking-widest text-white text-glow-cyan">
-          MISSION PAUSED
+
+        <h2 className="text-xl sm:text-2xl font-black font-mono tracking-widest text-white text-glow-cyan uppercase mb-1">
+          TACTICAL STANDBY
         </h2>
-        <p className="text-xs text-slate-400 mt-1 mb-6">
-          System telemetry suspended. Ready to resume.
+        <p className="text-xs text-slate-400 font-mono mb-5">
+          Avionics held in stasis. Ready to engage.
         </p>
 
         {/* Action Buttons */}
-        <div className="w-full space-y-3">
+        <div className="w-full space-y-2.5">
           <button
             onClick={() => {
               soundManager.playClick();
               onResume();
             }}
-            className="w-full py-3 px-4 rounded-xl font-bold bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-black shadow-[0_0_20px_rgba(0,240,255,0.4)] transition-all flex items-center justify-center gap-2 cursor-pointer"
+            className="w-full py-3 px-4 btn-arcade-cyan text-sm flex items-center justify-center gap-2 cursor-pointer clip-chamfer-sm"
           >
-            <Play className="w-5 h-5 fill-current" />
-            Resume Flight [P]
+            <Play className="w-4 h-4 fill-current" />
+            <span>RESUME FLIGHT [P]</span>
           </button>
 
           <button
@@ -43,26 +45,32 @@ export default function PauseModal({ onResume, onRestart }: PauseModalProps) {
               soundManager.playClick();
               onRestart();
             }}
-            className="w-full py-3 px-4 rounded-xl font-medium bg-slate-900/90 hover:bg-slate-800 border border-slate-700 hover:border-amber-400/60 text-slate-200 hover:text-white transition-all flex items-center justify-center gap-2 cursor-pointer"
+            className="w-full py-2.5 px-4 btn-arcade-dark text-xs flex items-center justify-center gap-2 cursor-pointer clip-chamfer-sm"
           >
-            <RotateCcw className="w-4 h-4 text-amber-400" />
-            Restart Mission
+            <RotateCcw className="w-3.5 h-3.5 text-amber-400" />
+            <span>RESTART SORTIE</span>
           </button>
 
           <Link
             href="/"
             onClick={() => soundManager.playClick()}
-            className="w-full py-3 px-4 rounded-xl font-medium bg-slate-900/90 hover:bg-slate-800 border border-slate-700 hover:border-cyan-400/60 text-slate-200 hover:text-white transition-all flex items-center justify-center gap-2"
+            className="w-full py-2.5 px-4 btn-arcade-dark text-xs flex items-center justify-center gap-2 clip-chamfer-sm"
           >
-            <Home className="w-4 h-4 text-cyan-400" />
-            Abort to Main Menu
+            <Home className="w-3.5 h-3.5 text-cyan-400" />
+            <span>ABORT TO HANGAR</span>
           </Link>
         </div>
 
-        {/* Audio control at bottom */}
-        <div className="mt-6 pt-4 border-t border-slate-800 w-full flex items-center justify-between text-xs text-slate-400">
-          <span>Audio Output</span>
-          <SoundToggle />
+        {/* Quick Controls Reminder */}
+        <div className="mt-4 pt-3 border-t border-slate-800/80 w-full flex items-center justify-between text-[11px] text-slate-400 font-mono">
+          <div className="flex items-center gap-1.5">
+            <Crosshair className="w-3 h-3 text-cyan-400" />
+            <span>AIM: MOUSE</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <span>SOUND:</span>
+            <SoundToggle />
+          </div>
         </div>
       </div>
     </div>

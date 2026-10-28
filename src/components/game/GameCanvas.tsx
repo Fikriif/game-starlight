@@ -230,7 +230,7 @@ export default function GameCanvas() {
   return (
     <div
       ref={containerRef}
-      className="relative w-full h-[calc(100vh-4rem)] max-h-[900px] min-h-[550px] bg-[#050713] overflow-hidden select-none border-y sm:border sm:rounded-2xl border-cyan-500/20 shadow-[0_0_30px_rgba(0,0,0,0.8)]"
+      className="relative w-full h-[calc(100vh-4rem)] max-h-[920px] min-h-[520px] bg-[#02040a] overflow-hidden select-none border-y sm:border border-cyan-500/30 arcade-bezel corner-bracket"
     >
       {/* HTML5 Game Canvas */}
       <canvas
@@ -238,6 +238,9 @@ export default function GameCanvas() {
         className="w-full h-full block focus:outline-none cursor-crosshair"
         tabIndex={0}
       />
+
+      {/* Subtle CRT Scanline Texture */}
+      <div className="absolute inset-0 crt-scanlines pointer-events-none opacity-30 z-10" />
 
       {/* Floating HUD */}
       <GameHud
